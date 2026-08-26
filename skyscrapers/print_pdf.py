@@ -380,6 +380,24 @@ def _draw_board_card(
     if n != 4:
         raise ValueError(f"only 4×4 boards are supported for print (got N={n})")
 
+    c.saveState()
+    try:
+        _draw_board_card_contents(
+            c, origin_x, origin_y, board, board_size_cm
+        )
+    finally:
+        c.restoreState()
+
+
+def _draw_board_card_contents(
+    c: canvas.Canvas,
+    origin_x: float,
+    origin_y: float,
+    board: dict[str, Any],
+    board_size_cm: float,
+) -> None:
+    n = int(board["N"])
+
     level = resolve_difficulty_label(board)
     style = LEVEL_STYLE[level]
     clues = board["clues"]
@@ -408,9 +426,9 @@ def _draw_board_card(
     flower_r = min(header * 0.36, 0.24 * CM)
     header_y = origin_y + card_h - frame_pad - header / 2 - header_drop
     font_size = max(8.0, min(10.5, header * 0.50))
-    c.setFont("EnlairatsDisplay", font_size)
+    c.setFont("EnlairatsDisplay-Bold", font_size)
     label = level.upper()
-    text_w = pdfmetrics.stringWidth(label, "EnlairatsDisplay", font_size)
+    text_w = pdfmetrics.stringWidth(label, "EnlairatsDisplay-Bold", font_size)
     flower_text_gap = 0.22 * CM
     group_w = 2 * flower_r + flower_text_gap + text_w
     group_left = origin_x + (card_w - group_w) / 2
@@ -491,6 +509,8 @@ def _draw_board_card(
         origin_y + frame_pad + id_row * 0.52,
         str(board["id"]),
     )
+    # ReportLab keeps fill alpha in canvas state; reset so later boards aren't washed out.
+    c.setFillColorRGB(*CHOCOLATE)
 
 
 def load_boards_for_print(
