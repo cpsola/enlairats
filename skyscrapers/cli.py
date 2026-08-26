@@ -123,6 +123,40 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to a board JSON file",
     )
+
+    pdf = sub.add_parser(
+        "print",
+        help="Create a printable Modernista PDF of boards from a folder",
+    )
+    pdf.add_argument(
+        "--input-dir",
+        type=Path,
+        default=Path("boards"),
+        help="Folder of board JSON files (default: ./boards)",
+    )
+    pdf.add_argument(
+        "--output",
+        type=Path,
+        default=Path("enlairats-boards.pdf"),
+        help="Output PDF path (default: ./enlairats-boards.pdf)",
+    )
+    pdf.add_argument(
+        "--board-size",
+        type=float,
+        default=6.0,
+        help="Outer card side length in centimetres (default: 6, square)",
+    )
+    pdf.add_argument(
+        "--difficulty",
+        action="append",
+        default=None,
+        metavar="LEVEL",
+        help=(
+            "Filter by difficulty (repeatable). "
+            "English: easy/medium/hard/expert or Catalan: "
+            "Aprenent/Oficial/Mestre artesà/Arquitecte"
+        ),
+    )
     return parser
 
 
@@ -138,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_play(args)
     if args.command == "rate":
         return _cmd_rate(args)
+    if args.command == "print":
+        return _cmd_print(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -264,4 +300,30 @@ def _cmd_rate(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    return 0
+
+
+def _cmd_print(args: argparse.Namespace) -> int:
+    from .print_pdf import print_boards
+
+    try:
+        path, count, info = print_boards(
+            args.input_dir,
+            args.output,
+            board_size_cm=args.board_size,
+            difficulties=args.difficulty,
+        )
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    orient = "landscape" if info["landscape"] else "portrait"
+    print(
+        f"Wrote {count} board(s) → {path.resolve()}  "
+        f"({info['pages']} page(s), {info['cols']}×{info['rows']} per page, "
+        f"A4 {orient}, card {info['board_size_cm']:g} cm)"
+    )
     return 0

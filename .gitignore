@@ -34,3 +34,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Generated print output
+enlairats-boards.pdf
+*.pdf
+!graphics/**

@@ -35,9 +35,13 @@ Empty clue slots (no number / `0` in the JSON) give no information for that edge
 
 - Python 3.10+
 - NumPy
+- ReportLab (for `print`)
 - Tkinter (stdlib; needed for `play`)
+- Bundled fonts in `graphics/fonts/` (OFL)
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -85,6 +89,10 @@ python3 -m skyscrapers play --random --output-dir ./boards
 
 # Inspect rater technique trace for a board
 python3 -m skyscrapers rate boards/<id>.json
+
+# Printable Modernista PDF (all boards in ./boards)
+python3 -m skyscrapers print
+python3 -m skyscrapers print --board-size 5 --difficulty Oficial --output partida.pdf
 ```
 
 #### 2.4 CLI options (`generate`)
@@ -153,7 +161,37 @@ python3 -m skyscrapers rate boards/<id>.json
 
 Coordinates in the trace are 0-based `(row, col)`.
 
-### 2.8 Output
+#### 2.8 CLI (`print`)
+
+Build a home-printable **A4 PDF** of boards for the physical game **Enlairats** (Catalan Modernista / Amatller-inspired). Multiple boards per page; packing adapts to `--board-size`. Portrait or landscape is chosen automatically to fit more cards.
+
+```bash
+python3 -m skyscrapers print
+python3 -m skyscrapers print --input-dir ./boards --output enlairats-boards.pdf
+python3 -m skyscrapers print --board-size 6 --difficulty easy --difficulty "Mestre artesà"
+```
+
+| Option         | Required | Default                 | Description |
+| -------------- | -------- | ----------------------- | ----------- |
+| `--input-dir`  | no       | `./boards`              | Folder of board JSON files (sorted by filename) |
+| `--output`     | no       | `./enlairats-boards.pdf` | Output PDF path |
+| `--board-size` | no       | `6`                     | Outer **square card** side length in **cm** |
+| `--difficulty` | no       | all                     | Filter (repeatable). English `easy/medium/hard/expert` or Catalan `Aprenent/Oficial/Mestre artesà/Arquitecte` |
+
+Each card shows: clues + empty grid (no solution), Catalan level name with a distinct floral motif (4–7 petals by level), and a small centred id. Only **4×4** boards are accepted; any other size aborts the run.
+
+Printed level names:
+
+| JSON `difficulty` | Printed label   |
+| ----------------- | --------------- |
+| easy              | Aprenent        |
+| medium            | Oficial         |
+| hard              | Mestre artesà   |
+| expert            | Arquitecte      |
+
+Requires ReportLab and the bundled fonts under `graphics/fonts/` (see `requirements.txt`; use the project venv).
+
+### 2.9 Output
 
 Each board is written as its own JSON file, named with the puzzle id:
 
@@ -200,6 +238,7 @@ skyscrapers/
   cli.py           # argparse CLI
   display.py       # ASCII board rendering (show / generate --show)
   play.py          # Tkinter play UI
+  print_pdf.py     # Modernista printable PDF (print)
   latin.py         # random Latin-square solutions
   visibility.py    # visible-count + clues-from-grid
   clues.py         # clue slots, counting, canonical encoding
@@ -207,6 +246,9 @@ skyscrapers/
   generator.py     # fill → reduce clues → validate → rate
   rater.py         # technique-ladder difficulty scoring
   serialize.py     # puzzle id + JSON write
+graphics/
+  cover.png        # Enlairats cover art (style reference)
+  fonts/           # OFL fonts for PDF printing
 ```
 
 ### 3.2 Generation pipeline
