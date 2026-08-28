@@ -35,7 +35,8 @@ Thumbs.db
 .env.*
 !.env.example
 
-# Generated print output
+# Generated print / rules output
 enlairats-boards.pdf
+physicalgame/*.pdf
 *.pdf
 !graphics/**

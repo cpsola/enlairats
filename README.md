@@ -161,7 +161,21 @@ python3 -m skyscrapers rate boards/<id>.json
 
 Coordinates in the trace are 0-based `(row, col)`.
 
-#### 2.8 CLI (`print`)
+#### 2.8 CLI (`rules`)
+
+Build the physical-game **rules booklet** as a square PDF (10×10 cm pages), using Catalan text from `physicalgame/instruccions.md` and cover/building art from `graphics/`.
+
+```bash
+source .venv/bin/activate
+python -m skyscrapers rules
+python -m skyscrapers rules --output physicalgame/instruccions.pdf
+```
+
+| Option     | Required | Default                         | Description        |
+| ---------- | -------- | ------------------------------- | ------------------ |
+| `--output` | no       | `physicalgame/instruccions.pdf` | Output PDF path    |
+
+#### 2.9 CLI (`print`)
 
 Build a home-printable **A4 PDF** of boards for the physical game **Enlairats** (Catalan Modernista / Amatller-inspired). Multiple boards per page; packing adapts to `--board-size`. Portrait or landscape is chosen automatically to fit more cards.
 

@@ -1,0 +1,548 @@
+"""
+Generate a 10×10 cm Modernista-styled Enlairats rules booklet PDF.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from reportlab.lib.utils import ImageReader, simpleSplit
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+
+from .print_pdf import (
+    CM,
+    CREAM,
+    CHOCOLATE,
+    SAGE,
+    SAND,
+    TERRACOTTA,
+    LEVEL_STYLE,
+    _draw_flower,
+    _draw_scalloped_frame,
+    _register_fonts,
+    _set_fill,
+    _set_stroke,
+)
+
+PAGE = 10 * CM  # 10×10 cm square
+MARGIN = 0.65 * CM
+
+_PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+_GRAPHICS = _PACKAGE_ROOT / "graphics"
+_BUILDINGS = _GRAPHICS / "buildings"
+_COVER = _GRAPHICS / "cover_v2.png"
+_INSTR_MD = _PACKAGE_ROOT / "physicalgame" / "instruccions.md"
+
+BUILDINGS = [
+    {
+        "key": "masia_freixa",
+        "name": "Masia Freixa",
+        "height": "La més baixa",
+        "rank": 1,
+        "file": _BUILDINGS / "masia_freixa.png",
+    },
+    {
+        "key": "casa_amatller",
+        "name": "Casa Amatller",
+        "height": "Mitjana-baixa",
+        "rank": 2,
+        "file": _BUILDINGS / "casa_amatller.png",
+    },
+    {
+        "key": "torre_galatea",
+        "name": "Torre Galatea",
+        "height": "Mitjana-alta",
+        "rank": 3,
+        "file": _BUILDINGS / "torre_galatea.png",
+    },
+    {
+        "key": "torre_sagrada_familia",
+        "name": "Torre de la Sagrada Família",
+        "height": "La més alta",
+        "rank": 4,
+        "file": _BUILDINGS / "torre_sagrada_familia.png",
+    },
+]
+
+
+def _new_page(c: canvas.Canvas) -> None:
+    _set_fill(c, CREAM)
+    c.rect(0, 0, PAGE, PAGE, fill=1, stroke=0)
+    _draw_scalloped_frame(c, 0.18 * CM, 0.18 * CM, PAGE - 0.36 * CM, PAGE - 0.36 * CM, SAGE)
+
+
+def _title(c: canvas.Canvas, text: str, y: float) -> float:
+    c.setFont("EnlairatsDisplay-Bold", 11)
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawCentredString(PAGE / 2, y, text.upper())
+    # underline ornament
+    _set_stroke(c, SAGE, width=0.8)
+    c.line(PAGE / 2 - 1.6 * CM, y - 0.12 * CM, PAGE / 2 + 1.6 * CM, y - 0.12 * CM)
+    c.setFillColorRGB(*TERRACOTTA)
+    c.circle(PAGE / 2, y - 0.12 * CM, 1.4, fill=1, stroke=0)
+    return y - 0.55 * CM
+
+
+def _body(
+    c: canvas.Canvas,
+    text: str,
+    x: float,
+    y: float,
+    width: float,
+    *,
+    font: str = "EnlairatsSerif",
+    size: float = 7.2,
+    leading: float | None = None,
+) -> float:
+    leading = leading or size * 1.28
+    c.setFont(font, size)
+    c.setFillColorRGB(*CHOCOLATE)
+    lines = simpleSplit(text, font, size, width)
+    for line in lines:
+        c.drawString(x, y, line)
+        y -= leading
+    return y
+
+
+def _bullet(
+    c: canvas.Canvas,
+    text: str,
+    x: float,
+    y: float,
+    width: float,
+    *,
+    size: float = 7.0,
+) -> float:
+    c.setFillColorRGB(*SAGE)
+    c.circle(x + 0.08 * CM, y + 0.08 * CM, 1.5, fill=1, stroke=0)
+    return _body(c, text, x + 0.28 * CM, y, width - 0.28 * CM, size=size)
+
+
+def _page_number(c: canvas.Canvas, n: int, total: int) -> None:
+    c.setFont("EnlairatsSerif", 5.5)
+    c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.45)
+    c.drawCentredString(PAGE / 2, 0.32 * CM, f"{n} / {total}")
+    c.setFillColorRGB(*CHOCOLATE)
+
+
+def _fit_image(
+    c: canvas.Canvas,
+    path: Path,
+    x: float,
+    y: float,
+    max_w: float,
+    max_h: float,
+    *,
+    center: bool = True,
+) -> tuple[float, float]:
+    img = ImageReader(str(path))
+    iw, ih = img.getSize()
+    scale = min(max_w / iw, max_h / ih)
+    w, h = iw * scale, ih * scale
+    draw_x = x + (max_w - w) / 2 if center else x
+    draw_y = y + (max_h - h) / 2 if center else y
+    c.drawImage(img, draw_x, draw_y, width=w, height=h, mask="auto")
+    return w, h
+
+
+# ---------------------------------------------------------------------------
+# Pages
+# ---------------------------------------------------------------------------
+
+def _page_cover(c: canvas.Canvas) -> None:
+    _set_fill(c, CREAM)
+    c.rect(0, 0, PAGE, PAGE, fill=1, stroke=0)
+    # Cover art (landscape) — fit width, letterbox vertically
+    pad = 0.45 * CM
+    _fit_image(c, _COVER, pad, pad + 0.55 * CM, PAGE - 2 * pad, PAGE - 2 * pad - 0.7 * CM)
+    c.setFont("EnlairatsDisplay-Bold", 8)
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawCentredString(PAGE / 2, 0.42 * CM, "INSTRUCCIONS")
+    _draw_scalloped_frame(c, 0.18 * CM, 0.18 * CM, PAGE - 0.36 * CM, PAGE - 0.36 * CM, SAGE)
+
+
+def _page_intro(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.15 * CM
+    y = _title(c, "Què és Enlairats?", y)
+    y = _body(
+        c,
+        "Enlairats és un joc de lògica ambientat en l’arquitectura modernista "
+        "catalana. Amb miniatures de quatre edificis construeixes un petit "
+        "barri sobre el tauler: has de decidir on va cadascun de manera que, "
+        "mirant des dels carrers del voltant, se’n vegin exactament els que "
+        "indiquen les pistes.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=7.4,
+    )
+    y -= 0.25 * CM
+    c.setFont("EnlairatsSerif-Bold", 7.5)
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawString(MARGIN, y, "Cada tauler té una sola solució.")
+    y -= 0.55 * CM
+    y = _title(c, "Contingut", y)
+    for item in (
+        "Taulers d’Enlairats (graella 4×4 amb pistes al contorn).",
+        "Miniatures dels quatre edificis (quatre peces de cada un).",
+    ):
+        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
+        y -= 0.18 * CM
+
+
+def _page_buildings(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.1 * CM
+    y = _title(c, "Els quatre edificis", y)
+    y = _body(
+        c,
+        "Del més baix al més alt. A cada casella hi poses una miniatura.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=7.0,
+    )
+    y -= 0.2 * CM
+
+    # 2×2 grid of building cards
+    gap = 0.25 * CM
+    usable_w = PAGE - 2 * MARGIN
+    usable_h = y - MARGIN - 0.15 * CM
+    cell_w = (usable_w - gap) / 2
+    cell_h = (usable_h - gap) / 2
+
+    for i, b in enumerate(BUILDINGS):
+        col, row = i % 2, i // 2
+        x0 = MARGIN + col * (cell_w + gap)
+        y0 = MARGIN + (1 - row) * (cell_h + gap)
+
+        _set_stroke(c, SAGE, width=0.9)
+        _set_fill(c, CREAM)
+        c.roundRect(x0, y0, cell_w, cell_h, 4, fill=1, stroke=1)
+
+        # rank badge
+        _set_fill(c, TERRACOTTA if b["rank"] == 4 else SAGE)
+        c.circle(x0 + 0.28 * CM, y0 + cell_h - 0.28 * CM, 0.22 * CM, fill=1, stroke=0)
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont("EnlairatsDisplay-Bold", 7)
+        c.drawCentredString(x0 + 0.28 * CM, y0 + cell_h - 0.35 * CM, str(b["rank"]))
+
+        img_h = cell_h - 0.95 * CM
+        _fit_image(
+            c,
+            b["file"],
+            x0 + 0.12 * CM,
+            y0 + 0.55 * CM,
+            cell_w - 0.24 * CM,
+            img_h,
+        )
+        c.setFillColorRGB(*CHOCOLATE)
+        c.setFont("EnlairatsDisplay-Bold", 5.5)
+        name = b["name"].upper()
+        # shorten Sagrada label if needed
+        if len(name) > 22:
+            name = "SAGRADA FAMÍLIA"
+        c.drawCentredString(x0 + cell_w / 2, y0 + 0.32 * CM, name)
+        c.setFont("EnlairatsSerif", 5.2)
+        c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.75)
+        c.drawCentredString(x0 + cell_w / 2, y0 + 0.12 * CM, b["height"])
+        c.setFillColorRGB(*CHOCOLATE)
+
+
+def _page_goal_prep(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.1 * CM
+    y = _title(c, "Objectiu", y)
+    y = _body(
+        c,
+        "Omple totes les caselles de la graella 4×4 col·locant-hi les "
+        "miniatures, de manera que es compleixin totes les pistes del "
+        "contorn i la regla de barri.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=7.4,
+    )
+    y -= 0.4 * CM
+    y = _title(c, "Preparació", y)
+    steps = [
+        "Tria una carta de tauler (segons el nivell de dificultat).",
+        "Col·loca les fitxes de pistes (fitxes circulars numerades de l’1 al 4) "
+        "al contorn del tauler, reproduïnt el que indica la carta.",
+        "Deixa a mà les miniatures dels quatre edificis.",
+    ]
+    for i, step in enumerate(steps, start=1):
+        c.setFillColorRGB(*SAGE)
+        c.setFont("EnlairatsDisplay-Bold", 8)
+        c.drawString(MARGIN, y, f"{i}.")
+        y = _body(c, step, MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM, size=7.2)
+        y -= 0.28 * CM
+
+
+def _page_howto(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.1 * CM
+    y = _title(c, "Com es juga", y)
+    y = _body(
+        c,
+        "L’objectiu és omplir totes les caselles amb les miniatures respectant "
+        "les pistes del contorn i la regla de barri. Pots moure les peces "
+        "mentre raones.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=7.0,
+    )
+    y -= 0.3 * CM
+
+    c.setFont("EnlairatsDisplay-Bold", 8)
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawString(MARGIN, y, "LA REGLA DEL BARRI")
+    y -= 0.35 * CM
+    for item in (
+        "A cada fila, els quatre edificis hi apareixen una sola vegada (un de cada).",
+        "A cada columna, els quatre edificis hi apareixen una sola vegada (un de cada).",
+    ):
+        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN, size=6.9)
+        y -= 0.15 * CM
+
+    y -= 0.2 * CM
+    c.setFont("EnlairatsDisplay-Bold", 8)
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawString(MARGIN, y, "LES PISTES DE CONTORN")
+    y -= 0.35 * CM
+    for item in (
+        "Els números del contorn indiquen quants edificis es veuen mirant "
+        "aquell carrer en línia recta des d’aquell costat.",
+        "Un edifici és visible només si és més alt que tots els que tens davant.",
+        "Els més baixos que queden darrere d’un de més alt queden amagats.",
+    ):
+        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN, size=6.8)
+        y -= 0.12 * CM
+
+    y -= 0.15 * CM
+    y = _body(
+        c,
+        "La Masia Freixa mai no amaga el que té al darrere; la Torre de la "
+        "Sagrada Família amaga tot el que quedi darrere seu des d’aquella mirada.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=6.6,
+        font="EnlairatsSerif-SemiBold",
+    )
+
+
+def _page_important_examples(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.1 * CM
+    y = _title(c, "Important", y)
+    for item in (
+        "Si una posició del contorn no té número, no hi ha pista: no aporta informació.",
+        "No cal endevinar: és un joc de lògica; cada pas es pot deduir.",
+    ):
+        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN, size=7.0)
+        y -= 0.2 * CM
+
+    y -= 0.15 * CM
+    y = _title(c, "Exemples de visibilitat", y)
+    y = _body(
+        c,
+        "Mira d’esquerra a dreta (de prop a lluny). La pista diu quants se’n veuen.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=6.6,
+    )
+    y -= 0.25 * CM
+
+    examples = [
+        (
+            [2, 1, 4, 3],
+            "Es veuen la Casa Amatller i la Torre de la Sagrada Família.",
+            2,
+        ),
+        (
+            [1, 2, 3, 4],
+            "Es veuen tots quatre, cada un més alt que l’anterior.",
+            4,
+        ),
+    ]
+    y = _draw_examples(c, examples, y)
+
+    y -= 0.15 * CM
+    y = _body(
+        c,
+        "La mateixa fila es pot mirar des de l’altre costat. Amb les miniatures, "
+        "comprova-ho mirant el tauler des d’aquella pista.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=6.5,
+    )
+
+
+def _draw_examples(
+    c: canvas.Canvas,
+    examples: list[tuple[list[int], str, int]],
+    y: float,
+) -> float:
+    icon_h = 1.15 * CM
+    for ranks, caption, clue in examples:
+        # clue badge
+        _set_fill(c, SAGE)
+        c.circle(MARGIN + 0.28 * CM, y - 0.35 * CM, 0.28 * CM, fill=1, stroke=0)
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont("EnlairatsDisplay-Bold", 9)
+        c.drawCentredString(MARGIN + 0.28 * CM, y - 0.45 * CM, str(clue))
+
+        x = MARGIN + 0.7 * CM
+        slot_w = (PAGE - 2 * MARGIN - 0.7 * CM) / 4
+        for rank in ranks:
+            b = BUILDINGS[rank - 1]
+            _fit_image(c, b["file"], x, y - icon_h, slot_w - 0.08 * CM, icon_h)
+            x += slot_w
+        y -= icon_h + 0.08 * CM
+        y = _body(c, caption, MARGIN, y, PAGE - 2 * MARGIN, size=6.3)
+        y -= 0.28 * CM
+    return y
+
+
+def _page_examples_end(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.1 * CM
+    y = _title(c, "Més exemples", y)
+
+    examples = [
+        (
+            [4, 1, 2, 3],
+            "Només es veu la Torre de la Sagrada Família.",
+            1,
+        ),
+        (
+            [3, 1, 4, 2],
+            "Es veuen la Torre Galatea i la Torre de la Sagrada Família.",
+            2,
+        ),
+    ]
+    y = _draw_examples(c, examples, y)
+    y -= 0.15 * CM
+
+    y = _title(c, "Com saber si has acabat", y)
+    steps = [
+        "Totes les caselles tenen una miniatura.",
+        "Cap fila ni columna no repeteix el mateix edifici.",
+        "Mirant des de cada pista, es veuen exactament tants edificis com indica el número.",
+    ]
+    for i, step in enumerate(steps, start=1):
+        c.setFillColorRGB(*SAGE)
+        c.setFont("EnlairatsDisplay-Bold", 8)
+        c.drawString(MARGIN, y, f"{i}.")
+        y = _body(c, step, MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM, size=6.9)
+        y -= 0.22 * CM
+
+
+def _page_levels_close(c: canvas.Canvas) -> None:
+    _new_page(c)
+    y = PAGE - MARGIN - 0.1 * CM
+    y = _title(c, "Nivells de dificultat", y)
+
+    levels = [
+        ("Aprenent", "Ideal per aprendre les regles i practicar."),
+        ("Oficial", "Cal més atenció a files, columnes i pistes."),
+        ("Mestre artesà", "Raonament més fi; combina diverses pistes."),
+        ("Arquitecte", "El repte més alt."),
+    ]
+    for name, desc in levels:
+        style = LEVEL_STYLE[name]
+        _draw_flower(
+            c,
+            MARGIN + 0.28 * CM,
+            y + 0.05 * CM,
+            0.22 * CM,
+            petals=style["petals"],
+            petal_rgb=style["petal"],
+            center_rgb=style["center"],
+            accent_rgb=style["accent"],
+        )
+        c.setFillColorRGB(*CHOCOLATE)
+        c.setFont("EnlairatsDisplay-Bold", 7)
+        c.drawString(MARGIN + 0.65 * CM, y, name.upper())
+        y = _body(
+            c,
+            desc,
+            MARGIN + 0.65 * CM,
+            y - 0.28 * CM,
+            PAGE - 2 * MARGIN - 0.65 * CM,
+            size=6.4,
+        )
+        y -= 0.22 * CM
+
+    y -= 0.1 * CM
+    y = _body(
+        c,
+        "Cada tauler porta una flor decorativa i el nom del nivell.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=6.5,
+    )
+    y -= 0.35 * CM
+    y = _title(c, "Una mica d’ambient", y)
+    y = _body(
+        c,
+        "Enlairats reuneix quatre icones del Modernisme i de la imaginació "
+        "arquitectònica catalana. Cada partida és un petit fragment de ciutat "
+        "que cal ordenar amb cura, com un arquitecte que encara dibuixa el barri.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+        size=6.8,
+    )
+    y -= 0.35 * CM
+    c.setFont("EnlairatsDisplay-Bold", 9)
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawCentredString(PAGE / 2, y, "Que gaudeixis construint.")
+
+
+def write_rules_pdf(output_path: Path | None = None) -> Path:
+    """Build the 10×10 cm rules booklet. Returns the output path."""
+    if output_path is None:
+        output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions.pdf"
+    output_path = Path(output_path)
+
+    missing = [b["file"] for b in BUILDINGS if not b["file"].is_file()]
+    if missing:
+        raise FileNotFoundError(
+            "missing building images: " + ", ".join(str(p) for p in missing)
+        )
+    if not _COVER.is_file():
+        raise FileNotFoundError(f"missing cover: {_COVER}")
+
+    _register_fonts()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    pages = [
+        _page_cover,
+        _page_intro,
+        _page_buildings,
+        _page_goal_prep,
+        _page_howto,
+        _page_important_examples,
+        _page_examples_end,
+        _page_levels_close,
+    ]
+    total = len(pages)
+
+    c = canvas.Canvas(str(output_path), pagesize=(PAGE, PAGE))
+    for i, page_fn in enumerate(pages, start=1):
+        if i > 1:
+            c.showPage()
+        page_fn(c)
+        if i > 1:  # no page number on cover
+            _page_number(c, i, total)
+    c.save()
+    return output_path

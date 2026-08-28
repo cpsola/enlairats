@@ -157,6 +157,17 @@ def build_parser() -> argparse.ArgumentParser:
             "Aprenent/Oficial/Mestre artesà/Arquitecte"
         ),
     )
+
+    rules = sub.add_parser(
+        "rules",
+        help="Create the 10×10 cm Enlairats rules booklet PDF",
+    )
+    rules.add_argument(
+        "--output",
+        type=Path,
+        default=Path("physicalgame/instruccions.pdf"),
+        help="Output PDF path (default: physicalgame/instruccions.pdf)",
+    )
     return parser
 
 
@@ -174,6 +185,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_rate(args)
     if args.command == "print":
         return _cmd_print(args)
+    if args.command == "rules":
+        return _cmd_rules(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -326,4 +339,20 @@ def _cmd_print(args: argparse.Namespace) -> int:
         f"({info['pages']} page(s), {info['cols']}×{info['rows']} per page, "
         f"A4 {orient}, card {info['board_size_cm']:g} cm)"
     )
+    return 0
+
+
+def _cmd_rules(args: argparse.Namespace) -> int:
+    from .rules_pdf import write_rules_pdf
+
+    try:
+        path = write_rules_pdf(args.output)
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"Wrote rules booklet → {path.resolve()}  (10×10 cm pages)")
     return 0
