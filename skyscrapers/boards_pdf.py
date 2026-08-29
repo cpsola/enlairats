@@ -13,6 +13,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape as page_landscape
+from reportlab.lib.utils import ImageReader
 
 from .display import load_board_json
 from .rater import score_to_label
@@ -67,7 +68,23 @@ LEVEL_STYLE = {
 
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 _FONTS_DIR = _PACKAGE_ROOT / "graphics" / "fonts"
+_BUILDINGS_DIR = _PACKAGE_ROOT / "graphics" / "buildings"
 _FONTS_REGISTERED = False
+
+# Rank badge colors (green / blue / ochre / terracotta) — shared with rules booklet.
+RANK_BADGE = {
+    1: (0.35, 0.52, 0.38),
+    2: (0.38, 0.52, 0.68),
+    3: (0.72, 0.55, 0.22),
+    4: TERRACOTTA,
+}
+
+BUILDING_FILES = {
+    1: _BUILDINGS_DIR / "masia_freixa.png",
+    2: _BUILDINGS_DIR / "casa_amatller.png",
+    3: _BUILDINGS_DIR / "torre_galatea.png",
+    4: _BUILDINGS_DIR / "torre_sagrada_familia.png",
+}
 
 
 def _strip_accents(text: str) -> str:
@@ -281,6 +298,106 @@ def _draw_cell_pattern(
     c.restoreState()
 
 
+def _draw_rank_badge(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    rank: int,
+    radius: float,
+    *,
+    font_size: float,
+) -> None:
+    """Colored circle with white rank digit."""
+    _set_fill(c, RANK_BADGE[rank])
+    c.circle(x, y, radius, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont("EnlairatsDisplay-Bold", font_size)
+    c.drawCentredString(x, y - font_size * 0.32, str(rank))
+    c.setFillColorRGB(*CHOCOLATE)
+
+
+def _fit_image(
+    c: canvas.Canvas,
+    path: Path,
+    x: float,
+    y: float,
+    max_w: float,
+    max_h: float,
+    *,
+    center: bool = True,
+) -> tuple[float, float]:
+    img = ImageReader(str(path))
+    iw, ih = img.getSize()
+    scale = min(max_w / iw, max_h / ih)
+    w, h = iw * scale, ih * scale
+    draw_x = x + (max_w - w) / 2 if center else x
+    draw_y = y + (max_h - h) / 2 if center else y
+    c.drawImage(img, draw_x, draw_y, width=w, height=h, mask="auto")
+    return w, h
+
+
+def _draw_card_shell(
+    c: canvas.Canvas,
+    origin_x: float,
+    origin_y: float,
+    board: dict[str, Any],
+    board_size_cm: float,
+    *,
+    header_label: str,
+) -> dict[str, float]:
+    """Cream card, frame, flower header, and id row. Returns layout metrics."""
+    level = resolve_difficulty_label(board)
+    style = LEVEL_STYLE[level]
+    layout = _compute_card_layout(board_size_cm)
+    card_w = layout["card_w"]
+    card_h = layout["card_h"]
+    frame_pad = layout["frame"]
+    header = layout["header"]
+    id_row = layout["id_row"]
+
+    _set_fill(c, CREAM)
+    _set_stroke(c, CHOCOLATE, width=0.5)
+    c.roundRect(origin_x, origin_y, card_w, card_h, 8, fill=1, stroke=0)
+    _draw_scalloped_frame(c, origin_x, origin_y, card_w, card_h, style["accent"])
+
+    header_drop = 0.14 * CM
+    flower_r = min(header * 0.36, 0.24 * CM)
+    header_y = origin_y + card_h - frame_pad - header / 2 - header_drop
+    font_size = max(8.0, min(10.5, header * 0.50))
+    c.setFont("EnlairatsDisplay-Bold", font_size)
+    label = header_label.upper()
+    text_w = pdfmetrics.stringWidth(label, "EnlairatsDisplay-Bold", font_size)
+    flower_text_gap = 0.22 * CM
+    group_w = 2 * flower_r + flower_text_gap + text_w
+    group_left = origin_x + (card_w - group_w) / 2
+    flower_x = group_left + flower_r
+    text_x = group_left + 2 * flower_r + flower_text_gap
+    _draw_flower(
+        c,
+        flower_x,
+        header_y,
+        flower_r,
+        petals=style["petals"],
+        petal_rgb=style["petal"],
+        center_rgb=style["center"],
+        accent_rgb=style["accent"],
+    )
+    c.setFillColorRGB(*CHOCOLATE)
+    c.drawString(text_x, header_y - font_size * 0.38, label)
+
+    id_font = max(5.0, min(6.5, id_row * 0.55))
+    c.setFont("EnlairatsSerif", id_font)
+    c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.55)
+    c.drawCentredString(
+        origin_x + card_w / 2,
+        origin_y + frame_pad + id_row * 0.52,
+        str(board["id"]),
+    )
+    c.setFillColorRGB(*CHOCOLATE)
+
+    return layout
+
+
 def _compute_card_layout(card_size_cm: float) -> dict[str, float]:
     """
     Layout for a square card.
@@ -381,7 +498,7 @@ def _draw_board_card(
     board: dict[str, Any],
     board_size_cm: float,
 ) -> None:
-    """Draw one playable board card; origin is bottom-left of the card."""
+    """Draw one playable board card (front); origin is bottom-left of the card."""
     n = int(board["N"])
     if n != 4:
         raise ValueError(f"only 4×4 boards are supported for print (got N={n})")
@@ -389,6 +506,29 @@ def _draw_board_card(
     c.saveState()
     try:
         _draw_board_card_contents(
+            c, origin_x, origin_y, board, board_size_cm
+        )
+    finally:
+        c.restoreState()
+
+
+def _draw_solution_card(
+    c: canvas.Canvas,
+    origin_x: float,
+    origin_y: float,
+    board: dict[str, Any],
+    board_size_cm: float,
+) -> None:
+    """Draw the solution side (back) of a board card."""
+    n = int(board["N"])
+    if n != 4:
+        raise ValueError(f"only 4×4 boards are supported for print (got N={n})")
+    if "solution" not in board:
+        raise ValueError(f"board {board.get('id', '?')} has no solution")
+
+    c.saveState()
+    try:
+        _draw_solution_card_contents(
             c, origin_x, origin_y, board, board_size_cm
         )
     finally:
@@ -403,55 +543,20 @@ def _draw_board_card_contents(
     board_size_cm: float,
 ) -> None:
     n = int(board["N"])
-
     level = resolve_difficulty_label(board)
-    style = LEVEL_STYLE[level]
     clues = board["clues"]
-    layout = _compute_card_layout(board_size_cm)
+    layout = _draw_card_shell(
+        c, origin_x, origin_y, board, board_size_cm, header_label=level
+    )
     card_w = layout["card_w"]
-    card_h = layout["card_h"]
     grid = layout["grid"]
     clue_band = layout["clue_band"]
     clue_gap = layout["clue_gap"]
     clue_font = layout["clue_font"]
     frame_pad = layout["frame"]
-    header = layout["header"]
     id_row = layout["id_row"]
     puzzle = layout["puzzle"]
     cell = layout["cell"]
-
-    # Card cream background
-    _set_fill(c, CREAM)
-    _set_stroke(c, CHOCOLATE, width=0.5)
-    c.roundRect(origin_x, origin_y, card_w, card_h, 8, fill=1, stroke=0)
-
-    _draw_scalloped_frame(c, origin_x, origin_y, card_w, card_h, style["accent"])
-
-    # Header: flower + level, centred in the top strip
-    header_drop = 0.14 * CM
-    flower_r = min(header * 0.36, 0.24 * CM)
-    header_y = origin_y + card_h - frame_pad - header / 2 - header_drop
-    font_size = max(8.0, min(10.5, header * 0.50))
-    c.setFont("EnlairatsDisplay-Bold", font_size)
-    label = level.upper()
-    text_w = pdfmetrics.stringWidth(label, "EnlairatsDisplay-Bold", font_size)
-    flower_text_gap = 0.22 * CM
-    group_w = 2 * flower_r + flower_text_gap + text_w
-    group_left = origin_x + (card_w - group_w) / 2
-    flower_x = group_left + flower_r
-    text_x = group_left + 2 * flower_r + flower_text_gap
-    _draw_flower(
-        c,
-        flower_x,
-        header_y,
-        flower_r,
-        petals=style["petals"],
-        petal_rgb=style["petal"],
-        center_rgb=style["center"],
-        accent_rgb=style["accent"],
-    )
-    c.setFillColorRGB(*CHOCOLATE)
-    c.drawString(text_x, header_y - font_size * 0.38, label)
 
     # Puzzle block (grid + clue bands), centred horizontally
     puzzle_left = origin_x + (card_w - puzzle) / 2
@@ -483,10 +588,7 @@ def _draw_board_card_contents(
             return
         c.drawCentredString(cx, baseline_y, str(val))
 
-    # Top: baseline just above grid top edge, digit rises into band
     top_baseline = grid_top + clue_gap
-    # Bottom: entire digit below grid bottom edge
-    # Bottom: sit just under the grid line (minimal gap)
     bottom_baseline = grid_bottom - clue_font * 0.86 - 0.8
 
     for i, val in enumerate(clues["top"]):
@@ -506,17 +608,101 @@ def _draw_board_card_contents(
             grid_bottom + (n - 1 - i + 0.5) * cell - clue_font * 0.35,
         )
 
-    # Discrete id, bottom-centre (in id row)
-    id_font = max(5.0, min(6.5, id_row * 0.55))
-    c.setFont("EnlairatsSerif", id_font)
-    c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.55)
-    c.drawCentredString(
-        origin_x + card_w / 2,
-        origin_y + frame_pad + id_row * 0.52,
-        str(board["id"]),
+
+def _draw_solution_card_contents(
+    c: canvas.Canvas,
+    origin_x: float,
+    origin_y: float,
+    board: dict[str, Any],
+    board_size_cm: float,
+) -> None:
+    """Back of the card: solution grid with building miniatures and rank badges."""
+    n = int(board["N"])
+    solution = board["solution"]
+    layout = _draw_card_shell(
+        c, origin_x, origin_y, board, board_size_cm, header_label="Solució"
     )
-    # ReportLab keeps fill alpha in canvas state; reset so later boards aren't washed out.
-    c.setFillColorRGB(*CHOCOLATE)
+    card_w = layout["card_w"]
+    card_h = layout["card_h"]
+    frame_pad = layout["frame"]
+    header = layout["header"]
+    id_row = layout["id_row"]
+
+    # Larger inner grid — no clue bands on the back.
+    pad = 0.22 * CM
+    grid = min(
+        card_w - 2 * frame_pad - 2 * pad,
+        card_h - 2 * frame_pad - header - id_row - 2 * pad,
+    )
+    cell = grid / n
+    grid_left = origin_x + (card_w - grid) / 2
+    grid_bottom = origin_y + frame_pad + id_row + pad
+
+    _set_fill(c, CREAM)
+    _set_stroke(c, CHOCOLATE, width=1.2)
+    c.rect(grid_left, grid_bottom, grid, grid, fill=1, stroke=1)
+
+    img_pad = cell * 0.08
+    badge_r = max(0.12 * CM, min(0.18 * CM, cell * 0.18))
+    badge_font = max(4.5, min(7.0, badge_r * 2.8))
+
+    for r in range(n):
+        for col in range(n):
+            rank = int(solution[r][col])
+            x = grid_left + col * cell
+            y = grid_bottom + (n - 1 - r) * cell
+            _draw_cell_pattern(c, x, y, cell)
+            _set_stroke(c, CHOCOLATE, width=0.7)
+            c.rect(x, y, cell, cell, fill=0, stroke=1)
+
+            path = BUILDING_FILES[rank]
+            if path.is_file():
+                _fit_image(
+                    c,
+                    path,
+                    x + img_pad,
+                    y + img_pad,
+                    cell - 2 * img_pad,
+                    cell - 2 * img_pad,
+                )
+            else:
+                # Fallback: large coloured rank digit
+                c.setFont("EnlairatsDisplay-Bold", cell * 0.45)
+                c.setFillColorRGB(*RANK_BADGE[rank])
+                c.drawCentredString(
+                    x + cell / 2, y + cell * 0.32, str(rank)
+                )
+
+            _draw_rank_badge(
+                c,
+                x + cell - badge_r - 0.04 * CM,
+                y + cell - badge_r - 0.04 * CM,
+                rank,
+                badge_r,
+                font_size=badge_font,
+            )
+
+
+def _card_slot_xy(
+    slot: int,
+    cols: int,
+    rows: int,
+    start_x: float,
+    start_y: float,
+    card_w: float,
+    card_h: float,
+    gap: float,
+    *,
+    mirror: bool = False,
+) -> tuple[float, float]:
+    """Bottom-left of a card slot; ``mirror`` flips columns for duplex backs."""
+    col = slot % cols
+    row = slot // cols
+    if mirror:
+        col = cols - 1 - col
+    x = start_x + col * (card_w + gap)
+    y = start_y + (rows - 1 - row) * (card_h + gap)
+    return x, y
 
 
 def load_boards_for_print(
@@ -539,6 +725,8 @@ def load_boards_for_print(
             )
         if "clues" not in board:
             raise ValueError(f"{path.name}: missing clues")
+        if "solution" not in board:
+            raise ValueError(f"{path.name}: missing solution (needed for card backs)")
         level = resolve_difficulty_label(board)
         if difficulty_filter is not None and level not in difficulty_filter:
             continue
@@ -561,11 +749,16 @@ def write_boards_pdf(
     if board_size_cm <= 0:
         raise ValueError("--board-size must be positive")
 
+    missing_art = [p for p in BUILDING_FILES.values() if not p.is_file()]
+    if missing_art:
+        raise FileNotFoundError(
+            "missing building images: " + ", ".join(str(p) for p in missing_art)
+        )
+
     _register_fonts()
     card_w, card_h, _grid = card_dimensions(board_size_cm)
     page_size, cols, rows, is_landscape = _best_page_layout(card_w, card_h)
     gap = 0.55 * CM
-    margin = 1.0 * CM
     per_page = cols * rows
 
     output_path = Path(output_path)
@@ -580,15 +773,31 @@ def write_boards_pdf(
     start_x = (pw - total_w) / 2
     start_y = (ph - total_h) / 2
 
-    for index, board in enumerate(boards):
-        slot = index % per_page
-        if index > 0 and slot == 0:
+    # Duplex sheets: fronts, then mirrored backs (flip on long edge).
+    for page_start in range(0, len(boards), per_page):
+        chunk = boards[page_start : page_start + per_page]
+        if page_start > 0:
             c.showPage()
-        col = slot % cols
-        row = slot // cols  # 0 = top row visually → high y
-        x = start_x + col * (card_w + gap)
-        y = start_y + (rows - 1 - row) * (card_h + gap)
-        _draw_board_card(c, x, y, board, board_size_cm)
+        for slot, board in enumerate(chunk):
+            x, y = _card_slot_xy(
+                slot, cols, rows, start_x, start_y, card_w, card_h, gap
+            )
+            _draw_board_card(c, x, y, board, board_size_cm)
+
+        c.showPage()
+        for slot, board in enumerate(chunk):
+            x, y = _card_slot_xy(
+                slot,
+                cols,
+                rows,
+                start_x,
+                start_y,
+                card_w,
+                card_h,
+                gap,
+                mirror=True,
+            )
+            _draw_solution_card(c, x, y, board, board_size_cm)
 
     c.save()
     return output_path
@@ -609,6 +818,7 @@ def print_boards(
     path = write_boards_pdf(boards, output_path, board_size_cm=board_size_cm)
     card_w, card_h, _ = card_dimensions(board_size_cm)
     page_size, cols, rows, is_landscape = _best_page_layout(card_w, card_h)
+    front_pages = math.ceil(len(boards) / (cols * rows))
     info = {
         "boards": len(boards),
         "cols": cols,
@@ -616,6 +826,7 @@ def print_boards(
         "per_page": cols * rows,
         "landscape": is_landscape,
         "board_size_cm": board_size_cm,
-        "pages": math.ceil(len(boards) / (cols * rows)),
+        "pages": front_pages * 2,  # fronts + backs
+        "front_pages": front_pages,
     }
     return path, len(boards), info

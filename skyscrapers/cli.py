@@ -125,7 +125,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     pdf = sub.add_parser(
-        "print",
+        "print_boards",
         help="Create a printable Modernista PDF of boards from a folder",
     )
     pdf.add_argument(
@@ -159,7 +159,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     rules = sub.add_parser(
-        "rules",
+        "print_rules",
         help="Create the 10×10 cm Enlairats rules booklet PDF",
     )
     rules.add_argument(
@@ -183,10 +183,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_play(args)
     if args.command == "rate":
         return _cmd_rate(args)
-    if args.command == "print":
-        return _cmd_print(args)
-    if args.command == "rules":
-        return _cmd_rules(args)
+    if args.command == "print_boards":
+        return _cmd_print_boards(args)
+    if args.command == "print_rules":
+        return _cmd_print_rules(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -316,8 +316,8 @@ def _cmd_rate(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_print(args: argparse.Namespace) -> int:
-    from .print_pdf import print_boards
+def _cmd_print_boards(args: argparse.Namespace) -> int:
+    from .boards_pdf import print_boards
 
     try:
         path, count, info = print_boards(
@@ -342,7 +342,7 @@ def _cmd_print(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_rules(args: argparse.Namespace) -> int:
+def _cmd_print_rules(args: argparse.Namespace) -> int:
     from .rules_pdf import write_rules_pdf
 
     try:

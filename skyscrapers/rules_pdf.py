@@ -9,7 +9,7 @@ from pathlib import Path
 from reportlab.lib.utils import ImageReader, simpleSplit
 from reportlab.pdfgen import canvas
 
-from .print_pdf import (
+from .boards_pdf import (
     CM,
     CREAM,
     CHOCOLATE,
