@@ -503,16 +503,17 @@ def _page_examples(c: canvas.Canvas) -> None:
         PAGE - 2 * MARGIN,
         size=BODY_SIZE - 0.15,
     )
-    y -= 0.10 * CM
+    y -= 0.28 * CM
 
     bottom = _content_bottom()
     available = y - bottom
     n = len(ALL_EXAMPLES)
-    slot_h = available / n
-    icon_h = min(0.95 * CM, slot_h * 0.52)
+    example_gap = 0.38 * CM
+    slot_h = (available - (n - 1) * example_gap) / n
+    icon_h = min(0.82 * CM, slot_h * 0.44)
 
     for i, (ranks, caption, clue) in enumerate(ALL_EXAMPLES):
-        slot_top = y - i * slot_h
+        slot_top = y - i * (slot_h + example_gap)
         _set_fill(c, SAGE)
         badge_x = MARGIN + 0.26 * CM
         badge_y = slot_top - icon_h * 0.5
@@ -544,7 +545,7 @@ def _page_examples(c: canvas.Canvas) -> None:
             )
             x += slot_w
 
-        caption_y = slot_top - icon_h - 0.14 * CM
+        caption_y = slot_top - icon_h - 0.28 * CM
         _body(
             c,
             caption,
