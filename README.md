@@ -35,7 +35,7 @@ Empty clue slots (no number / `0` in the JSON) give no information for that edge
 
 - Python 3.10+
 - NumPy
-- ReportLab (for `print`)
+- ReportLab (for `print_boards` / `print_rules`)
 - Tkinter (stdlib; needed for `play`)
 - Bundled fonts in `graphics/fonts/` (OFL)
 
@@ -90,9 +90,9 @@ python3 -m skyscrapers play --random --output-dir ./boards
 # Inspect rater technique trace for a board
 python3 -m skyscrapers rate boards/<id>.json
 
-# Printable Modernista PDF (all boards in ./boards)
-python3 -m skyscrapers print
-python3 -m skyscrapers print --board-size 5 --difficulty Oficial --output partida.pdf
+# Printable Modernista PDF (reads ./boards, writes to physicalgame/)
+python3 -m skyscrapers print_boards
+python3 -m skyscrapers print_boards --board-size 5 --difficulty Oficial --output partida.pdf
 ```
 
 #### 2.4 CLI options (`generate`)
@@ -161,38 +161,38 @@ python3 -m skyscrapers rate boards/<id>.json
 
 Coordinates in the trace are 0-based `(row, col)`.
 
-#### 2.8 CLI (`rules`)
+#### 2.8 CLI (`print_rules`)
 
 Build the physical-game **rules booklet** as a square PDF (10×10 cm pages), using Catalan text from `physicalgame/instruccions.md` and cover/building art from `graphics/`.
 
 ```bash
 source .venv/bin/activate
-python -m skyscrapers rules
-python -m skyscrapers rules --output physicalgame/instruccions.pdf
+python -m skyscrapers print_rules
+python -m skyscrapers print_rules --output physicalgame/instruccions.pdf
 ```
 
 | Option     | Required | Default                         | Description        |
 | ---------- | -------- | ------------------------------- | ------------------ |
 | `--output` | no       | `physicalgame/instruccions.pdf` | Output PDF path    |
 
-#### 2.9 CLI (`print`)
+#### 2.9 CLI (`print_boards`)
 
-Build a home-printable **A4 PDF** of boards for the physical game **Enlairats** (Catalan Modernista / Amatller-inspired). Multiple boards per page; packing adapts to `--board-size`. Portrait or landscape is chosen automatically to fit more cards.
+Build a home-printable **A4 PDF** of boards for the physical game **Enlairats** (Catalan Modernista / Amatller-inspired). Multiple boards per page; packing adapts to `--board-size`. Portrait or landscape is chosen automatically to fit more cards. Each sheet of fronts is followed by a mirrored sheet of **solution backs** for duplex printing.
 
 ```bash
-python3 -m skyscrapers print
-python3 -m skyscrapers print --input-dir ./boards --output enlairats-boards.pdf
-python3 -m skyscrapers print --board-size 6 --difficulty easy --difficulty "Mestre artesà"
+python3 -m skyscrapers print_boards
+python3 -m skyscrapers print_boards --input-dir ./boards --output physicalgame/enlairats-boards.pdf
+python3 -m skyscrapers print_boards --board-size 6 --difficulty easy --difficulty "Mestre artesà"
 ```
 
 | Option         | Required | Default                 | Description |
 | -------------- | -------- | ----------------------- | ----------- |
-| `--input-dir`  | no       | `./boards`              | Folder of board JSON files (sorted by filename) |
-| `--output`     | no       | `./enlairats-boards.pdf` | Output PDF path |
+| `--input-dir`  | no       | `./boards`                        | Folder of board JSON files (sorted by filename) |
+| `--output`     | no       | `./physicalgame/enlairats-boards.pdf` | Output PDF path |
 | `--board-size` | no       | `6`                     | Outer **square card** side length in **cm** |
 | `--difficulty` | no       | all                     | Filter (repeatable). English `easy/medium/hard/expert` or Catalan `Aprenent/Oficial/Mestre artesà/Arquitecte` |
 
-Each card shows: clues + empty grid (no solution), Catalan level name with a distinct floral motif (4–7 petals by level), and a small centred id. Only **4×4** boards are accepted; any other size aborts the run.
+Each card **front** shows: clues + empty grid, Catalan level name with a distinct floral motif (4–7 petals by level), and a small centred id. The **back** shows the solution with building miniatures and coloured rank badges. Only **4×4** boards are accepted; any other size aborts the run.
 
 Printed level names:
 
@@ -205,7 +205,7 @@ Printed level names:
 
 Requires ReportLab and the bundled fonts under `graphics/fonts/` (see `requirements.txt`; use the project venv).
 
-### 2.9 Output
+### 2.10 Output
 
 Each board is written as its own JSON file, named with the puzzle id:
 
@@ -252,7 +252,8 @@ skyscrapers/
   cli.py           # argparse CLI
   display.py       # ASCII board rendering (show / generate --show)
   play.py          # Tkinter play UI
-  print_pdf.py     # Modernista printable PDF (print)
+  boards_pdf.py    # Modernista printable board cards (print_boards)
+  rules_pdf.py     # 10×10 cm rules booklet (print_rules)
   latin.py         # random Latin-square solutions
   visibility.py    # visible-count + clues-from-grid
   clues.py         # clue slots, counting, canonical encoding
