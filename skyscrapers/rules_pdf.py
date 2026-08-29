@@ -80,20 +80,28 @@ ALL_EXAMPLES: list[tuple[list[int], str, int]] = [
     ),
     (
         [4, 1, 2, 3],
-        "Només es veu la Torre de la Sagrada Família.",
+        "Només es veu la Torre de la Sagrada Família (4), que tapa la resta d'edificis.",
         1,
     ),
     (
         [2, 1, 4, 3],
-        "Es veuen la Casa Amatller i la Torre de la Sagrada Família.",
+        "Es veuen la Casa Amatller (2) i la Torre de la Sagrada Família (4).",
         2,
     ),
     (
         [3, 1, 4, 2],
-        "Es veuen la Torre Galatea i la Torre de la Sagrada Família.",
+        "Es veuen la Torre Galatea (3) i la Torre de la Sagrada Família (4).",
         2,
     ),
 ]
+
+# Rank badge colors on the buildings page (green / blue / ochre / terracotta).
+RANK_BADGE = {
+    1: (0.35, 0.52, 0.38),
+    2: (0.38, 0.52, 0.68),
+    3: (0.72, 0.55, 0.22),
+    4: TERRACOTTA,
+}
 
 
 def _draw_page_frame(c: canvas.Canvas) -> None:
@@ -189,6 +197,100 @@ def _page_number(c: canvas.Canvas, n: int, total: int) -> None:
     c.setFont("EnlairatsSerif", 5.5)
     c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.45)
     c.drawRightString(PAGE - 0.82 * CM, 0.78 * CM, f"{n} / {total}")
+    c.setFillColorRGB(*CHOCOLATE)
+
+
+def _draw_right_arrow(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    length: float,
+    *,
+    rgb: tuple[float, float, float] = SAGE,
+) -> None:
+    """Modernista whiplash arrow pointing right; (x, y) left end, vertically centered."""
+    tip_x = x + length
+    wave = 0.055 * CM
+    head_w = 0.20 * CM
+    head_h = 0.13 * CM
+
+    c.saveState()
+    c.setLineCap(1)
+    c.setLineJoin(1)
+
+    # Starting bud (viewpoint), echoing the clue disc.
+    _set_fill(c, rgb)
+    c.circle(x + 0.05 * CM, y, 1.55, fill=1, stroke=0)
+
+    # Gentle undulating stem — Art Nouveau whiplash.
+    _set_stroke(c, rgb, width=1.25)
+    stem = c.beginPath()
+    stem.moveTo(x + 0.12 * CM, y)
+    stem.curveTo(
+        x + length * 0.28,
+        y + wave,
+        x + length * 0.58,
+        y - wave * 0.85,
+        tip_x - head_w * 0.85,
+        y,
+    )
+    c.drawPath(stem, stroke=1, fill=0)
+
+    # Soft leaf-shaped tip (curved chevron, not a hard triangle).
+    hx = tip_x - head_w
+    head = c.beginPath()
+    head.moveTo(tip_x, y)
+    head.curveTo(
+        tip_x - head_w * 0.35,
+        y + head_h * 0.15,
+        hx + head_w * 0.15,
+        y + head_h * 0.85,
+        hx,
+        y + head_h,
+    )
+    head.curveTo(
+        hx + head_w * 0.35,
+        y + head_h * 0.25,
+        hx + head_w * 0.35,
+        y - head_h * 0.25,
+        hx,
+        y - head_h,
+    )
+    head.curveTo(
+        hx + head_w * 0.15,
+        y - head_h * 0.85,
+        tip_x - head_w * 0.35,
+        y - head_h * 0.15,
+        tip_x,
+        y,
+    )
+    head.close()
+    _set_fill(c, rgb)
+    c.drawPath(head, stroke=0, fill=1)
+
+    # Tiny accent speck near the tip, like the title ornaments.
+    c.setFillColorRGB(*TERRACOTTA)
+    c.circle(tip_x - head_w * 0.55, y, 0.9, fill=1, stroke=0)
+
+    c.restoreState()
+    c.setFillColorRGB(*CHOCOLATE)
+
+
+def _draw_rank_badge(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    rank: int,
+    radius: float,
+    *,
+    font_size: float,
+) -> None:
+    """Colored circle with white rank digit (same symbols as the buildings page)."""
+    _set_fill(c, RANK_BADGE[rank])
+    c.circle(x, y, radius, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont("EnlairatsDisplay-Bold", font_size)
+    c.drawCentredString(x, y - font_size * 0.32, str(rank))
     c.setFillColorRGB(*CHOCOLATE)
 
 
@@ -306,12 +408,13 @@ def _page_buildings(c: canvas.Canvas) -> None:
         _set_fill(c, CREAM)
         c.roundRect(x0, y0, cell_w, cell_h, 4, fill=1, stroke=1)
 
-        _set_fill(c, TERRACOTTA if b["rank"] == 4 else SAGE)
-        c.circle(x0 + 0.32 * CM, y0 + cell_h - 0.32 * CM, 0.25 * CM, fill=1, stroke=0)
-        c.setFillColorRGB(1, 1, 1)
-        c.setFont("EnlairatsDisplay-Bold", 7.5)
-        c.drawCentredString(
-            x0 + 0.32 * CM, y0 + cell_h - 0.40 * CM, str(b["rank"])
+        _draw_rank_badge(
+            c,
+            x0 + 0.32 * CM,
+            y0 + cell_h - 0.32 * CM,
+            b["rank"],
+            0.25 * CM,
+            font_size=7.5,
         )
 
         img_h = cell_h - 1.0 * CM
@@ -394,9 +497,7 @@ def _page_examples(c: canvas.Canvas) -> None:
     y = _title(c, "Exemples de visibilitat", y)
     y = _body(
         c,
-        "Mira d’esquerra a dreta (de prop a lluny). El cercle verd és la pista. "
-        "La mateixa fila es pot mirar des de l’altre costat; amb les miniatures, "
-        "comprova-ho mirant el tauler des d’aquella pista.",
+        "Mira d’esquerra a dreta. El cercle verd és la pista. ",
         MARGIN,
         y,
         PAGE - 2 * MARGIN,
@@ -413,18 +514,33 @@ def _page_examples(c: canvas.Canvas) -> None:
     for i, (ranks, caption, clue) in enumerate(ALL_EXAMPLES):
         slot_top = y - i * slot_h
         _set_fill(c, SAGE)
+        badge_x = MARGIN + 0.26 * CM
         badge_y = slot_top - icon_h * 0.5
-        c.circle(MARGIN + 0.26 * CM, badge_y, 0.24 * CM, fill=1, stroke=0)
+        c.circle(badge_x, badge_y, 0.24 * CM, fill=1, stroke=0)
         c.setFillColorRGB(1, 1, 1)
         c.setFont("EnlairatsDisplay-Bold", 8.5)
-        c.drawCentredString(MARGIN + 0.26 * CM, badge_y - 0.09 * CM, str(clue))
+        c.drawCentredString(badge_x, badge_y - 0.09 * CM, str(clue))
 
-        x = MARGIN + 0.65 * CM
-        slot_w = (PAGE - 2 * MARGIN - 0.65 * CM) / 4
+        # Viewing direction: from the clue toward the buildings (near → far).
+        arrow_x = MARGIN + 0.58 * CM
+        arrow_len = 0.42 * CM
+        _draw_right_arrow(c, arrow_x, badge_y, arrow_len)
+
+        x = MARGIN + 1.12 * CM
+        slot_w = (PAGE - 2 * MARGIN - 1.12 * CM) / 4
         for rank in ranks:
             b = BUILDINGS[rank - 1]
+            img_w = slot_w - 0.08 * CM
             _fit_image(
-                c, b["file"], x, slot_top - icon_h, slot_w - 0.08 * CM, icon_h
+                c, b["file"], x, slot_top - icon_h, img_w, icon_h
+            )
+            _draw_rank_badge(
+                c,
+                x + img_w - 0.16 * CM,
+                slot_top - 0.14 * CM,
+                rank,
+                0.13 * CM,
+                font_size=5.5,
             )
             x += slot_w
 
