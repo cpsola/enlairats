@@ -565,6 +565,7 @@ def _page_end(c: canvas.Canvas) -> None:
         "Cap fila ni columna no repeteix el mateix edifici.",
         "Mirant des de cada pista, es veuen exactament tants edificis "
         "com indica el número.",
+        "Ara pots girar la carta de tauler i comprovar si la solució és correcta!",
     ]
     for i, step in enumerate(steps, start=1):
         c.setFillColorRGB(*SAGE)
@@ -573,14 +574,14 @@ def _page_end(c: canvas.Canvas) -> None:
         y = _body(
             c, step, MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM
         )
-        y -= 0.10 * CM
+        y -= 0.06 * CM
 
-    y -= 0.08 * CM
+    y -= 0.18 * CM
     y = _title(c, "Nivells de dificultat", y)
     levels = [
-        ("Aprenent", "Ideal per aprendre les regles i practicar."),
-        ("Oficial", "Cal més atenció a files, columnes i pistes."),
-        ("Mestre artesà", "Raonament més fi; combina diverses pistes."),
+        ("Aprenent", "Ideal per aprendre les regles i començar a jugar."),
+        ("Oficial", "Diversió garantida quan ja coneixes el joc."),
+        ("Mestre artesà", "Raonaments més avançats; combina diverses pistes."),
         ("Arquitecte", "El repte més alt."),
     ]
     for name, desc in levels:
@@ -606,9 +607,9 @@ def _page_end(c: canvas.Canvas) -> None:
             PAGE - 2 * MARGIN - 0.6 * CM,
             size=BODY_SIZE - 0.3,
         )
-        y -= 0.06 * CM
+        y -= 0.10 * CM
 
-    y -= 0.04 * CM
+    y -= 0.06 * CM
     y = _body(
         c,
         "Cada tauler porta una flor i el nom del nivell.",
@@ -617,12 +618,12 @@ def _page_end(c: canvas.Canvas) -> None:
         PAGE - 2 * MARGIN,
         size=BODY_SIZE - 0.3,
     )
-    y -= 0.28 * CM
     c.setFont("EnlairatsDisplay-Bold", 8.5)
     c.setFillColorRGB(*CHOCOLATE)
-    c.drawCentredString(
-        PAGE / 2, max(y, _content_bottom()), "Que gaudeixis construint."
-    )
+    # Keep a clear gap under the blurb; sit above the page-number band.
+    closing_y = min(y - 0.55 * CM, 1.05 * CM)
+    closing_y = max(closing_y, 0.88 * CM)
+    c.drawCentredString(PAGE / 2, closing_y, "Que gaudeixis construint.")
 
 
 def write_rules_pdf(output_path: Path | None = None) -> Path:

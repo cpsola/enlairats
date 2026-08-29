@@ -93,6 +93,7 @@ Has resolt el tauler quan:
 1. Totes les caselles tenen una miniatura.
 2. Cap fila ni columna no repeteix el mateix edifici.
 3. Mirant des de cada pista del contorn, es veuen exactament tants edificis com indica el número.
+4. Ara pots girar la carta de tauler i comprovar si la solució és correcta.
 
 ---
 
