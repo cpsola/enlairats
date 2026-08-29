@@ -220,6 +220,9 @@ def _draw_scalloped_frame(
     w: float,
     h: float,
     accent: tuple[float, float, float],
+    *,
+    max_flourish: float | None = None,
+    side_scallops: bool = True,
 ) -> None:
     """Double frame: chocolate inner, sage/accent outer with soft scallops."""
     # Outer sage-ish band
@@ -231,18 +234,21 @@ def _draw_scalloped_frame(
     c.roundRect(x + 5, y + 5, w - 10, h - 10, 4, stroke=1, fill=0)
 
     # Scallop hints mid-sides
-    r = 3.2
-    _set_fill(c, CREAM)
-    _set_stroke(c, SAGE, width=0.8)
-    for px, py in (
-        (x + w / 2, y + h - 1),
-        (x + w / 2, y + 1),
-        (x + 1, y + h / 2),
-        (x + w - 1, y + h / 2),
-    ):
-        c.circle(px, py, r, fill=1, stroke=1)
+    if side_scallops:
+        r = 3.2
+        _set_fill(c, CREAM)
+        _set_stroke(c, SAGE, width=0.8)
+        for px, py in (
+            (x + w / 2, y + h - 1),
+            (x + w / 2, y + 1),
+            (x + 1, y + h / 2),
+            (x + w - 1, y + h / 2),
+        ):
+            c.circle(px, py, r, fill=1, stroke=1)
 
     flourish = min(w, h) * 0.12
+    if max_flourish is not None:
+        flourish = min(flourish, max_flourish)
     _draw_corner_flourish(c, x + 8, y + h - 8, flourish, SAGE, "tl")
     _draw_corner_flourish(c, x + w - 8, y + h - 8, flourish, SAGE, "tr")
     _draw_corner_flourish(c, x + 8, y + 8, flourish, SAGE, "bl")
