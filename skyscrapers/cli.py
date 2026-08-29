@@ -137,8 +137,8 @@ def build_parser() -> argparse.ArgumentParser:
     pdf.add_argument(
         "--output",
         type=Path,
-        default=Path("enlairats-boards.pdf"),
-        help="Output PDF path (default: ./enlairats-boards.pdf)",
+        default=Path("physicalgame/enlairats-boards.pdf"),
+        help="Output PDF path (default: physicalgame/enlairats-boards.pdf)",
     )
     pdf.add_argument(
         "--board-size",

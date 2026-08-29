@@ -548,23 +548,90 @@ def _draw_board_card_contents(
     layout = _draw_card_shell(
         c, origin_x, origin_y, board, board_size_cm, header_label=level
     )
+    grid_left, grid_bottom, cell = _draw_puzzle_frame(
+        c, origin_x, origin_y, layout, n
+    )
+    _draw_border_clues(c, layout, clues, grid_left, grid_bottom, cell, n)
+
+
+def _draw_solution_card_contents(
+    c: canvas.Canvas,
+    origin_x: float,
+    origin_y: float,
+    board: dict[str, Any],
+    board_size_cm: float,
+) -> None:
+    """Back of the card: same grid/clues as the front, filled with the solution."""
+    n = int(board["N"])
+    solution = board["solution"]
+    clues = board["clues"]
+    layout = _draw_card_shell(
+        c, origin_x, origin_y, board, board_size_cm, header_label="Solució"
+    )
+    grid_left, grid_bottom, cell = _draw_puzzle_frame(
+        c, origin_x, origin_y, layout, n
+    )
+
+    img_pad = cell * 0.08
+    badge_r = max(0.11 * CM, min(0.16 * CM, cell * 0.17))
+    badge_font = max(4.5, min(6.5, badge_r * 2.8))
+
+    for r in range(n):
+        for col in range(n):
+            rank = int(solution[r][col])
+            x = grid_left + col * cell
+            y = grid_bottom + (n - 1 - r) * cell
+
+            path = BUILDING_FILES[rank]
+            if path.is_file():
+                _fit_image(
+                    c,
+                    path,
+                    x + img_pad,
+                    y + img_pad,
+                    cell - 2 * img_pad,
+                    cell - 2 * img_pad,
+                )
+            else:
+                c.setFont("EnlairatsDisplay-Bold", cell * 0.45)
+                c.setFillColorRGB(*RANK_BADGE[rank])
+                c.drawCentredString(
+                    x + cell / 2, y + cell * 0.32, str(rank)
+                )
+
+            _draw_rank_badge(
+                c,
+                x + cell - badge_r - 0.04 * CM,
+                y + cell - badge_r - 0.04 * CM,
+                rank,
+                badge_r,
+                font_size=badge_font,
+            )
+
+    _draw_border_clues(c, layout, clues, grid_left, grid_bottom, cell, n)
+
+
+def _draw_puzzle_frame(
+    c: canvas.Canvas,
+    origin_x: float,
+    origin_y: float,
+    layout: dict[str, float],
+    n: int,
+) -> tuple[float, float, float]:
+    """Draw the empty grid (same size on front and back). Returns grid origin + cell."""
     card_w = layout["card_w"]
     grid = layout["grid"]
     clue_band = layout["clue_band"]
-    clue_gap = layout["clue_gap"]
-    clue_font = layout["clue_font"]
     frame_pad = layout["frame"]
     id_row = layout["id_row"]
     puzzle = layout["puzzle"]
     cell = layout["cell"]
 
-    # Puzzle block (grid + clue bands), centred horizontally
     puzzle_left = origin_x + (card_w - puzzle) / 2
     puzzle_bottom = origin_y + frame_pad + id_row
     grid_left = puzzle_left + clue_band
     grid_bottom = puzzle_bottom + clue_band
 
-    # Grid background
     _set_fill(c, CREAM)
     _set_stroke(c, CHOCOLATE, width=1.2)
     c.rect(grid_left, grid_bottom, grid, grid, fill=1, stroke=1)
@@ -577,11 +644,26 @@ def _draw_board_card_contents(
             _set_stroke(c, CHOCOLATE, width=0.7)
             c.rect(x, y, cell, cell, fill=0, stroke=1)
 
-    # Clues — digits kept inside clue bands, clear of grid border
+    return grid_left, grid_bottom, cell
+
+
+def _draw_border_clues(
+    c: canvas.Canvas,
+    layout: dict[str, float],
+    clues: dict[str, list[int]],
+    grid_left: float,
+    grid_bottom: float,
+    cell: float,
+    n: int,
+) -> None:
+    grid = layout["grid"]
+    clue_band = layout["clue_band"]
+    clue_gap = layout["clue_gap"]
+    clue_font = layout["clue_font"]
+    grid_top = grid_bottom + grid
+
     c.setFont("EnlairatsSerif-SemiBold", clue_font)
     c.setFillColorRGB(*CHOCOLATE)
-
-    grid_top = grid_bottom + grid
 
     def draw_clue(val: int, cx: float, baseline_y: float) -> None:
         if not val:
@@ -607,80 +689,6 @@ def _draw_board_card_contents(
             grid_left + grid + clue_band * 0.50,
             grid_bottom + (n - 1 - i + 0.5) * cell - clue_font * 0.35,
         )
-
-
-def _draw_solution_card_contents(
-    c: canvas.Canvas,
-    origin_x: float,
-    origin_y: float,
-    board: dict[str, Any],
-    board_size_cm: float,
-) -> None:
-    """Back of the card: solution grid with building miniatures and rank badges."""
-    n = int(board["N"])
-    solution = board["solution"]
-    layout = _draw_card_shell(
-        c, origin_x, origin_y, board, board_size_cm, header_label="Solució"
-    )
-    card_w = layout["card_w"]
-    card_h = layout["card_h"]
-    frame_pad = layout["frame"]
-    header = layout["header"]
-    id_row = layout["id_row"]
-
-    # Larger inner grid — no clue bands on the back.
-    pad = 0.22 * CM
-    grid = min(
-        card_w - 2 * frame_pad - 2 * pad,
-        card_h - 2 * frame_pad - header - id_row - 2 * pad,
-    )
-    cell = grid / n
-    grid_left = origin_x + (card_w - grid) / 2
-    grid_bottom = origin_y + frame_pad + id_row + pad
-
-    _set_fill(c, CREAM)
-    _set_stroke(c, CHOCOLATE, width=1.2)
-    c.rect(grid_left, grid_bottom, grid, grid, fill=1, stroke=1)
-
-    img_pad = cell * 0.08
-    badge_r = max(0.12 * CM, min(0.18 * CM, cell * 0.18))
-    badge_font = max(4.5, min(7.0, badge_r * 2.8))
-
-    for r in range(n):
-        for col in range(n):
-            rank = int(solution[r][col])
-            x = grid_left + col * cell
-            y = grid_bottom + (n - 1 - r) * cell
-            _draw_cell_pattern(c, x, y, cell)
-            _set_stroke(c, CHOCOLATE, width=0.7)
-            c.rect(x, y, cell, cell, fill=0, stroke=1)
-
-            path = BUILDING_FILES[rank]
-            if path.is_file():
-                _fit_image(
-                    c,
-                    path,
-                    x + img_pad,
-                    y + img_pad,
-                    cell - 2 * img_pad,
-                    cell - 2 * img_pad,
-                )
-            else:
-                # Fallback: large coloured rank digit
-                c.setFont("EnlairatsDisplay-Bold", cell * 0.45)
-                c.setFillColorRGB(*RANK_BADGE[rank])
-                c.drawCentredString(
-                    x + cell / 2, y + cell * 0.32, str(rank)
-                )
-
-            _draw_rank_badge(
-                c,
-                x + cell - badge_r - 0.04 * CM,
-                y + cell - badge_r - 0.04 * CM,
-                rank,
-                badge_r,
-                font_size=badge_font,
-            )
 
 
 def _card_slot_xy(
