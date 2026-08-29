@@ -74,11 +74,6 @@ BUILDINGS = [
 
 ALL_EXAMPLES: list[tuple[list[int], str, int]] = [
     (
-        [2, 1, 4, 3],
-        "Es veuen la Casa Amatller i la Torre de la Sagrada Família.",
-        2,
-    ),
-    (
         [1, 2, 3, 4],
         "Es veuen tots quatre, cada un més alt que l’anterior.",
         4,
@@ -87,6 +82,11 @@ ALL_EXAMPLES: list[tuple[list[int], str, int]] = [
         [4, 1, 2, 3],
         "Només es veu la Torre de la Sagrada Família.",
         1,
+    ),
+    (
+        [2, 1, 4, 3],
+        "Es veuen la Casa Amatller i la Torre de la Sagrada Família.",
+        2,
     ),
     (
         [3, 1, 4, 2],
@@ -117,7 +117,7 @@ def _new_page(c: canvas.Canvas) -> None:
 
 def _content_top() -> float:
     """Baseline for the first line, leaving room for title glyph ascent."""
-    return PAGE - MARGIN - 0.22 * CM
+    return PAGE - MARGIN - 0.08 * CM
 
 
 def _content_bottom() -> float:
@@ -146,7 +146,7 @@ def _section(c: canvas.Canvas, text: str, y: float) -> float:
     c.setFont("EnlairatsDisplay-Bold", SECTION_SIZE)
     c.setFillColorRGB(*CHOCOLATE)
     c.drawString(MARGIN, y, text.upper())
-    return y - 0.30 * CM
+    return y - 0.42 * CM
 
 
 def _body(
@@ -185,9 +185,10 @@ def _bullet(
 
 
 def _page_number(c: canvas.Canvas, n: int, total: int) -> None:
+    # Bottom-right, in the frame band but clear of the corner flourish.
     c.setFont("EnlairatsSerif", 5.5)
     c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.45)
-    c.drawCentredString(PAGE / 2, MARGIN - 0.42 * CM, f"{n} / {total}")
+    c.drawRightString(PAGE - 0.82 * CM, 0.78 * CM, f"{n} / {total}")
     c.setFillColorRGB(*CHOCOLATE)
 
 
@@ -238,26 +239,24 @@ def _page_intro(c: canvas.Canvas) -> None:
         "catalana. Amb miniatures de quatre edificis construeixes un petit "
         "barri sobre el tauler: has de decidir on va cadascun de manera que, "
         "mirant des dels carrers del voltant, se’n vegin exactament els que "
-        "indiquen les pistes.",
+        "indiquen les pistes. Cada tauler té una sola solució.",
         MARGIN,
         y,
         PAGE - 2 * MARGIN,
     )
     y -= 0.14 * CM
-    c.setFont("EnlairatsSerif-Bold", BODY_SIZE + 0.3)
-    c.setFillColorRGB(*CHOCOLATE)
-    c.drawString(MARGIN, y, "Cada tauler té una sola solució.")
-    y -= 0.32 * CM
+    y -= 0.2 * CM
 
     y = _section(c, "Contingut", y)
     for item in (
         "Taulers d’Enlairats (graella 4×4 amb pistes al contorn).",
         "Miniatures dels quatre edificis (quatre peces de cada un).",
+        "Fitxes de pista (quatre peces amb cada número de 1 a 4).",
     ):
         y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.12 * CM
 
-    y -= 0.08 * CM
+    y -= 0.2 * CM
     y = _section(c, "Objectiu", y)
     y = _body(
         c,
@@ -291,14 +290,6 @@ def _page_buildings(c: canvas.Canvas) -> None:
     _new_page(c)
     y = _content_top()
     y = _title(c, "Els quatre edificis", y)
-    y = _body(
-        c,
-        "Del més baix al més alt. A cada casella hi poses una miniatura.",
-        MARGIN,
-        y,
-        PAGE - 2 * MARGIN,
-    )
-    y -= 0.10 * CM
 
     gap = 0.16 * CM
     usable_w = PAGE - 2 * MARGIN
@@ -351,35 +342,41 @@ def _page_howto(c: canvas.Canvas) -> None:
     y = _body(
         c,
         "Omple totes les caselles amb les miniatures respectant les pistes "
-        "del contorn i la regla de barri. Pots moure les peces mentre raones.",
+        "del contorn i la regla de barri.",
         MARGIN,
         y,
         PAGE - 2 * MARGIN,
     )
-    y -= 0.14 * CM
+    y -= 0.2 * CM
 
     y = _section(c, "La regla del barri", y)
     for item in (
-        "A cada fila, els quatre edificis hi apareixen una sola vegada (un de cada).",
-        "A cada columna, els quatre edificis hi apareixen una sola vegada (un de cada).",
-        "No es pot repetir el mateix edifici a la mateixa fila ni columna.",
+        "A cada fila, els quatre edificis hi apareixen una sola vegada.",
+        "A cada columna, els quatre edificis hi apareixen una sola vegada.",
     ):
         y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.08 * CM
-
     y -= 0.06 * CM
+    y = _body(
+        c,
+        "És a dir, no es pot repetir el mateix edifici a la mateixa fila ni columna.",
+        MARGIN,
+        y,
+        PAGE - 2 * MARGIN,
+    )
+
+    y -= 0.2 * CM
     y = _section(c, "Les pistes de contorn", y)
     for item in (
         "Els números del contorn indiquen quants edificis es veuen mirant "
         "aquell carrer en línia recta des d’aquell costat.",
-        "Posiciona’t al costat de la pista i mira cap a l’altre extrem.",
-        "Un edifici és visible només si és més alt que tots els que tens davant.",
+        "Posiciona’t al costat de la pista i mira cap a l’altre extrem. Un edifici és visible només si és més alt que tots els que tens davant.",
         "Els més baixos que queden darrere d’un de més alt queden amagats.",
     ):
         y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.06 * CM
 
-    y -= 0.06 * CM
+    y -= 0.2 * CM
     y = _section(c, "Important", y)
     for item in (
         "Si una posició del contorn no té número, no hi ha pista: no aporta informació.",
@@ -503,18 +500,7 @@ def _page_end(c: canvas.Canvas) -> None:
         PAGE - 2 * MARGIN,
         size=BODY_SIZE - 0.3,
     )
-    y -= 0.14 * CM
-    y = _section(c, "Una mica d’ambient", y)
-    y = _body(
-        c,
-        "Enlairats reuneix quatre icones del Modernisme català. Cada partida "
-        "és un petit fragment de ciutat que cal ordenar amb cura.",
-        MARGIN,
-        y,
-        PAGE - 2 * MARGIN,
-        size=BODY_SIZE - 0.15,
-    )
-    y -= 0.16 * CM
+    y -= 0.28 * CM
     c.setFont("EnlairatsDisplay-Bold", 8.5)
     c.setFillColorRGB(*CHOCOLATE)
     c.drawCentredString(
