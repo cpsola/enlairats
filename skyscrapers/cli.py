@@ -165,8 +165,19 @@ def build_parser() -> argparse.ArgumentParser:
     rules.add_argument(
         "--output",
         type=Path,
-        default=Path("physicalgame/instruccions.pdf"),
-        help="Output PDF path (default: physicalgame/instruccions.pdf)",
+        default=None,
+        help=(
+            "Output PDF path (default: physicalgame/instruccions.pdf, "
+            "or physicalgame/instruccions-a4.pdf with --a4)"
+        ),
+    )
+    rules.add_argument(
+        "--a4",
+        action="store_true",
+        help=(
+            "Impose all 6 pages on one portrait A4 sheet (2×3 grid); "
+            "backs show the game logo only — duplex print and cut"
+        ),
     )
     return parser
 
@@ -343,10 +354,13 @@ def _cmd_print_boards(args: argparse.Namespace) -> int:
 
 
 def _cmd_print_rules(args: argparse.Namespace) -> int:
-    from .rules_pdf import write_rules_pdf
+    from .rules_pdf import write_rules_a4_pdf, write_rules_pdf
 
     try:
-        path = write_rules_pdf(args.output)
+        if args.a4:
+            path = write_rules_a4_pdf(args.output)
+        else:
+            path = write_rules_pdf(args.output)
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -354,5 +368,11 @@ def _cmd_print_rules(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Wrote rules booklet → {path.resolve()}  (10×10 cm pages)")
+    if args.a4:
+        print(
+            f"Wrote rules booklet → {path.resolve()}  "
+            "(A4 portrait 2×3 of 9×9 cm; front=rules, back=logo; duplex, flip short edge)"
+        )
+    else:
+        print(f"Wrote rules booklet → {path.resolve()}  (10×10 cm pages)")
     return 0

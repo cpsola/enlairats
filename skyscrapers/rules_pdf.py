@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader, simpleSplit
 from reportlab.pdfgen import canvas
 
@@ -23,11 +24,15 @@ from .boards_pdf import (
     _set_stroke,
 )
 
-PAGE = 10 * CM  # 10×10 cm square
+PAGE = 10 * CM  # 10×10 cm square (content design size / non-A4 PDF)
+# A4 imposition tile size (slightly smaller than PAGE to leave sheet margins).
+A4_TILE = 9 * CM
 # Safe content inset clear of the triple frame and corner curls.
 MARGIN = 1.35 * CM
 FRAME_INSET = 0.14 * CM
 FRAME_FLOURISH_MAX = 0.22 * CM
+# Warm parchment matching cover_v2.png edges (not the cooler CREAM used elsewhere).
+COVER_PARCHMENT = (238 / 255, 218 / 255, 189 / 255)
 
 # Typography defaults
 TITLE_SIZE = 11.0
@@ -626,12 +631,18 @@ def _page_end(c: canvas.Canvas) -> None:
     c.drawCentredString(PAGE / 2, closing_y, "Que gaudeixis construint.")
 
 
-def write_rules_pdf(output_path: Path | None = None) -> Path:
-    """Build the 10×10 cm rules booklet. Returns the output path."""
-    if output_path is None:
-        output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions.pdf"
-    output_path = Path(output_path)
+def _rules_page_fns() -> list:
+    return [
+        _page_cover,
+        _page_intro,
+        _page_buildings,
+        _page_howto,
+        _page_examples,
+        _page_end,
+    ]
 
+
+def _ensure_rules_assets() -> None:
     missing = [b["file"] for b in BUILDINGS if not b["file"].is_file()]
     if missing:
         raise FileNotFoundError(
@@ -640,25 +651,113 @@ def write_rules_pdf(output_path: Path | None = None) -> Path:
     if not _COVER.is_file():
         raise FileNotFoundError(f"missing cover: {_COVER}")
 
-    _register_fonts()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    pages = [
-        _page_cover,
-        _page_intro,
-        _page_buildings,
-        _page_howto,
-        _page_examples,
-        _page_end,
-    ]
-    total = len(pages)
-
-    c = canvas.Canvas(str(output_path), pagesize=(PAGE, PAGE))
-    for i, page_fn in enumerate(pages, start=1):
-        if i > 1:
-            c.showPage()
+def _register_rules_page_forms(c: canvas.Canvas) -> list[str]:
+    """Draw each 10×10 cm page into a Form XObject; return form names."""
+    page_fns = _rules_page_fns()
+    total = len(page_fns)
+    names: list[str] = []
+    for i, page_fn in enumerate(page_fns, start=1):
+        name = f"enlairats_rules_{i}"
+        c.beginForm(name, 0, 0, PAGE, PAGE)
         page_fn(c)
         if i > 1:
             _page_number(c, i, total)
+        c.endForm()
+        names.append(name)
+    return names
+
+
+def write_rules_pdf(output_path: Path | None = None) -> Path:
+    """Build the 10×10 cm rules booklet (one square page per sheet)."""
+    if output_path is None:
+        output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions.pdf"
+    output_path = Path(output_path)
+
+    _ensure_rules_assets()
+    _register_fonts()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    c = canvas.Canvas(str(output_path), pagesize=(PAGE, PAGE))
+    for i, name in enumerate(_register_rules_page_forms(c)):
+        if i > 0:
+            c.showPage()
+        c.doForm(name)
+    c.save()
+    return output_path
+
+
+def _page_logo_back(c: canvas.Canvas) -> None:
+    """Simple back face: parchment matched to cover_v2 + centred art, no frame."""
+    _set_fill(c, COVER_PARCHMENT)
+    c.rect(0, 0, PAGE, PAGE, fill=1, stroke=0)
+    # Cover art is landscape; keep modest padding so it sits in the square.
+    pad_x = 0.35 * CM
+    pad_y = 1.35 * CM
+    _fit_image(
+        c, _COVER, pad_x, pad_y, PAGE - 2 * pad_x, PAGE - 2 * pad_y
+    )
+
+
+def write_rules_a4_pdf(output_path: Path | None = None) -> Path:
+    """
+    Impose all six rules pages on one portrait A4 sheet (duplex).
+
+    Front: 2×3 grid of 9×9 cm tiles (content designed at 10×10, scaled down).
+    Back: same grid with the game logo only (parchment + cover_v2, no frame),
+    column-mirrored for short-edge duplex flip so each cut card has
+    rules on the front and the logo on the back.
+    """
+    if output_path is None:
+        output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions-a4.pdf"
+    output_path = Path(output_path)
+
+    _ensure_rules_assets()
+    _register_fonts()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Portrait A4: 2 columns × 3 rows of 9×9 cm tiles.
+    cols, rows = 2, 3
+    page_size = A4
+    aw, ah = page_size
+    gap = 0.25 * CM
+    margin = 0.45 * CM
+    avail_w = aw - 2 * margin - (cols - 1) * gap
+    avail_h = ah - 2 * margin - (rows - 1) * gap
+    # Prefer exact 9 cm tiles; only shrink further if the sheet is too tight.
+    scale = min(A4_TILE / PAGE, avail_w / (cols * PAGE), avail_h / (rows * PAGE))
+    tile = PAGE * scale
+    total_w = cols * tile + (cols - 1) * gap
+    total_h = rows * tile + (rows - 1) * gap
+    start_x = (aw - total_w) / 2
+    start_y = (ah - total_h) / 2
+
+    c = canvas.Canvas(str(output_path), pagesize=page_size)
+    names = _register_rules_page_forms(c)
+    if len(names) != 6:
+        raise RuntimeError(f"expected 6 rules pages, got {len(names)}")
+
+    logo_name = "enlairats_rules_logo_back"
+    c.beginForm(logo_name, 0, 0, PAGE, PAGE)
+    _page_logo_back(c)
+    c.endForm()
+
+    def place_grid(form_names: list[str], *, mirror_cols: bool = False) -> None:
+        for index, name in enumerate(form_names):
+            col = index % cols
+            row = index // cols  # 0 = top
+            if mirror_cols:
+                col = cols - 1 - col
+            x = start_x + col * (tile + gap)
+            y = start_y + (rows - 1 - row) * (tile + gap)
+            c.saveState()
+            c.translate(x, y)
+            c.scale(scale, scale)
+            c.doForm(name)
+            c.restoreState()
+
+    place_grid(names)
+    c.showPage()
+    place_grid([logo_name] * 6, mirror_cols=True)
     c.save()
     return output_path

@@ -169,11 +169,17 @@ Build the physical-game **rules booklet** as a square PDF (10×10 cm pages), usi
 source .venv/bin/activate
 python -m skyscrapers print_rules
 python -m skyscrapers print_rules --output physicalgame/instruccions.pdf
+
+# Home-print: all 6 pages on one duplex portrait A4 (2×3 grid; logo on backs)
+python -m skyscrapers print_rules --a4
 ```
 
-| Option     | Required | Default                         | Description        |
-| ---------- | -------- | ------------------------------- | ------------------ |
-| `--output` | no       | `physicalgame/instruccions.pdf` | Output PDF path    |
+| Option     | Required | Default | Description |
+| ---------- | -------- | ------- | ----------- |
+| `--output` | no       | `physicalgame/instruccions.pdf` (or `…-a4.pdf` with `--a4`) | Output PDF path |
+| `--a4`     | no       | off | Impose all 6 pages on one portrait A4 (9×9 cm tiles); backs show the logo only |
+
+With `--a4`, print **duplex, flip on the short edge**, then cut six **9×9 cm** cards. Each card has one rules page on the front and the Enlairats logo (`cover_v2` on matching parchment, no frame) on the back.
 
 #### 2.9 CLI (`print_boards`)
 
@@ -205,7 +211,55 @@ Printed level names:
 
 Requires ReportLab and the bundled fonts under `graphics/fonts/` (see `requirements.txt`; use the project venv).
 
-### 2.10 Output
+### 2.10 Printing the physical game
+
+Generate the PDFs first (from the project root, with the venv active):
+
+```bash
+python -m skyscrapers print_rules --a4
+python -m skyscrapers print_boards
+```
+
+Outputs:
+
+| File | Contents |
+| ---- | -------- |
+| `physicalgame/instruccions-a4.pdf` | One portrait A4 duplex sheet: 2×3 grid of **9×9 cm** rules pages; logo on all backs |
+| `physicalgame/enlairats-boards.pdf` | Board cards: front sheets + mirrored solution backs |
+| `physicalgame/instruccions.pdf` | Optional: six separate **10×10 cm** pages (`print_rules` without `--a4`) |
+
+#### Common print settings
+
+- Scale **100%** / “actual size” — do **not** use “fit to page”.
+- Colour, best quality your printer allows.
+- Paper: **250–300 g/m²** cardstock (matt or lightly textured). Thin paper lets board solutions or logo backs show through.
+
+#### Rules cards (`print_rules --a4`)
+
+1. Print **duplex**, **portrait**, flip on the **short edge**.
+2. **Front:** pages **1–6** in a 2×3 grid of **9×9 cm** tiles (extra margin on the A4 sheet for easier cutting).
+3. **Back:** the same grid with only the game logo (`cover_v2` centred on parchment matched to the art, no decorative frame), column-mirrored so each cut square aligns front/back.
+4. Cut six **9×9 cm** squares. Stack in order 1→6 (logo faces out on the back of each card).
+5. Optional finish: rounded corners (~3–4 mm) and bind with a **Chicago screw**, Japanese stitch, or a small ring at the top-left.
+
+Without `--a4`, you get six separate **10×10 cm** pages (`physicalgame/instruccions.pdf`) — front only, no logo backs.
+
+#### Board cards (`print_boards`)
+
+1. Print the whole PDF **duplex**, flip on the **long edge** (the layout mirrors columns so fronts and solution backs align).
+2. Do a **one-sheet test** (first front + its back) before a full run.
+3. Cut out each square card (default outer size **6 cm**; override with `--board-size`).
+4. Optional: rounded corners and a light matt laminate for table use.
+
+#### Quick checklist
+
+- [ ] 100% scale  
+- [ ] Rules (`--a4`): duplex, short-edge flip, portrait; cut **9×9 cm**  
+- [ ] Boards: duplex, long-edge flip; cut **6 cm** (default)  
+- [ ] Thick cardstock (≥250 g/m²)  
+- [ ] Test sheet before full print  
+
+### 2.11 Output
 
 Each board is written as its own JSON file, named with the puzzle id:
 
