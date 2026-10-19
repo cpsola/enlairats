@@ -18,6 +18,7 @@ _CELL_SELECTED = "#d6eaf8"
 _CELL_LOCKED = "#e8e8e8"
 _CLUE = "#1a6b7a"
 _TEXT = "#1c1c1c"
+_COORD = "#b0b0b0"
 _META = "#555555"
 _BTN = "#e7e0d6"
 
@@ -38,7 +39,8 @@ class PlayApp:
         self._digit_buffer = ""
         self._digit_job: str | None = None
 
-        self.cell_buttons: list[list[tk.Button]] = []
+        # Each cell: (frame, value_label, coord_label)
+        self.cell_widgets: list[list[tuple[tk.Frame, tk.Label, tk.Label]]] = []
 
         root.title(f"Skyscrapers — {board['id']}")
         root.configure(bg=_BG)
@@ -49,6 +51,49 @@ class PlayApp:
 
         root.bind_all("<Key>", self._on_key)
         root.bind_all("<Escape>", lambda _e: self._quit())
+
+    def _make_cell(self, parent: tk.Frame, r: int, c: int, font_cell: tuple) -> tuple[tk.Frame, tk.Label, tk.Label]:
+        """Build one playable cell with faint (row,col) and a centered height."""
+        cell_w = max(44, 18 + 6 * self.n)
+        cell_h = max(44, 18 + 6 * self.n)
+        frame = tk.Frame(
+            parent,
+            bg=_CELL,
+            highlightthickness=2,
+            highlightbackground="#c8c8c8",
+            highlightcolor="#c8c8c8",
+            width=cell_w,
+            height=cell_h,
+        )
+        frame.grid_propagate(False)
+        frame.pack_propagate(False)
+
+        coord = tk.Label(
+            frame,
+            text=f"{r},{c}",
+            fg=_COORD,
+            bg=_CELL,
+            font=("Helvetica", 7),
+            anchor="nw",
+        )
+        coord.place(x=3, y=1)
+
+        value = tk.Label(
+            frame,
+            text="",
+            fg=_TEXT,
+            bg=_CELL,
+            font=font_cell,
+        )
+        value.place(relx=0.5, rely=0.55, anchor="center")
+
+        def on_click(_event: tk.Event, rr: int = r, cc: int = c) -> None:
+            self._select(rr, cc)
+
+        for widget in (frame, coord, value):
+            widget.bind("<Button-1>", on_click)
+
+        return frame, value, coord
 
     def _build_ui(self) -> None:
         outer = tk.Frame(self.root, bg=_BG, padx=16, pady=12)
@@ -107,24 +152,12 @@ class PlayApp:
                 width=3,
             ).grid(row=r + 1, column=0, padx=2, pady=2)
 
-            row_btns: list[tk.Button] = []
+            row_cells: list[tuple[tk.Frame, tk.Label, tk.Label]] = []
             for c in range(self.n):
-                btn = tk.Button(
-                    board_frame,
-                    text="",
-                    width=3,
-                    height=1,
-                    font=font_cell,
-                    bg=_CELL,
-                    fg=_TEXT,
-                    activebackground=_CELL_SELECTED,
-                    relief="ridge",
-                    bd=2,
-                    command=lambda rr=r, cc=c: self._select(rr, cc),
-                )
-                btn.grid(row=r + 1, column=c + 1, padx=2, pady=2, ipadx=6, ipady=8)
-                row_btns.append(btn)
-            self.cell_buttons.append(row_btns)
+                frame, value, coord = self._make_cell(board_frame, r, c, font_cell)
+                frame.grid(row=r + 1, column=c + 1, padx=2, pady=2)
+                row_cells.append((frame, value, coord))
+            self.cell_widgets.append(row_cells)
 
             right_val = self.clues["right"][r]
             tk.Label(
@@ -191,15 +224,21 @@ class PlayApp:
     def _refresh_cells(self) -> None:
         for r in range(self.n):
             for c in range(self.n):
-                btn = self.cell_buttons[r][c]
+                frame, value_lbl, coord_lbl = self.cell_widgets[r][c]
                 val = self.grid[r][c]
-                btn.configure(text="" if val == 0 else str(val))
+                value_lbl.configure(text="" if val == 0 else str(val))
                 if self.solved:
-                    btn.configure(bg=_CELL_LOCKED, state="disabled")
+                    bg = _CELL_LOCKED
+                    border = "#a8a8a8"
                 elif self.selected == (r, c):
-                    btn.configure(bg=_CELL_SELECTED, state="normal")
+                    bg = _CELL_SELECTED
+                    border = _CLUE
                 else:
-                    btn.configure(bg=_CELL, state="normal")
+                    bg = _CELL
+                    border = "#c8c8c8"
+                frame.configure(bg=bg, highlightbackground=border, highlightcolor=border)
+                value_lbl.configure(bg=bg)
+                coord_lbl.configure(bg=bg)
 
     def _push_change(self, r: int, c: int, new_val: int) -> None:
         old = self.grid[r][c]

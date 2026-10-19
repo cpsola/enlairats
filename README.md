@@ -159,7 +159,9 @@ python3 -m skyscrapers rate boards/<id>.json
 | ------ | -------- | ------- | ------------------------- |
 | `path` | yes      | —       | Path to a board JSON file |
 
-Coordinates in the trace are 0-based `(row, col)`.
+Coordinates in the trace are 0-based `(row, col)` with **(0,0) = top-left**.
+
+How to read the numbered trace: each line is tagged with the technique that just ran (`direct`, `latin`, …). Several lines can share one technique step (one placement plus its peer eliminations). Those sibling lines are listed in **row-major cell order**, so a `candidates … remove` line can appear *before* the `place` that caused it. See [§3.4](#34-difficulty-model-raterpy) for the technique ladder and restart rules.
 
 #### 2.8 CLI (`print_rules`)
 
@@ -351,14 +353,25 @@ Uniqueness is mandatory: every published clue set has exactly one solution. The 
 
 The rater does **not** decide uniqueness (the solver already did). It re-solves the puzzle with a fixed ladder of human-like techniques and scores how much work that took.
 
-Techniques run from easy to hard. After any progress, the rater restarts from the top of the ladder. Only when easy steps stall does it move on.
+#### Technique order (easy → hard)
 
-1. **Direct clue placements** — Immediate edge facts: clue `1` places `N` on the near cell; clue `N` forces the strictly increasing line `1…N` from that edge.
-2. **Latin singles** — Row/column uniqueness: a cell with one candidate (naked single), or a height that fits in only one cell of a row/column (hidden single).
-3. **Visibility pruning** — Drop candidates that break tallest-building bounds (e.g. where `N` may sit given a near/far clue).
-4. **Line enumeration** — For each row/column, list Latin permutations still allowed by cell candidates and both end clues; intersect to shrink candidates.
-5. **Shallow case reasoning** — For a cell with 2–3 options, try each with easy propagation; eliminate options that contradict (depth-1 “what if”).
-6. **Deep search** — Branch on a remaining cell and recurse until the unique solution is found.
+Techniques always run in this fixed order. After **any** progress, the rater **restarts from the top** (`direct`). It only tries a harder technique when every easier one made no change. That is why a `latin` or `visibility` step in the `rate` trace is never “chosen instead of” an available direct move — easier work was already exhausted for that pass.
+
+1. **`direct`** — Immediate edge facts from border clues:
+   - Clue `1` → place `N` on the near-edge cell.
+   - Clue `N` → force the strictly increasing line `1…N` from that edge.
+   - Edges are scanned in order **top → bottom → left → right**. Placing a height also strips that height from the rest of its row and column (Latin peer cleanup), and those eliminations are still tagged `direct` in the trace.
+2. **`latin`** — Row/column uniqueness: a cell with one candidate (naked single), or a height that fits in only one cell of a row/column (hidden single).
+3. **`visibility`** — Drop candidates that break tallest-building bounds (e.g. where `N` may sit given a near/far clue).
+4. **`line_enum`** — For each row/column, list Latin permutations still allowed by cell candidates and both end clues; intersect to shrink candidates.
+5. **`shallow_case`** — For a cell with 2–3 options, try each with easy propagation; eliminate options that contradict (depth-1 “what if”).
+6. **`deep_search`** — Branch on a remaining cell and recurse until the unique solution is found.
+
+#### Reading the `rate` trace
+
+- Coordinates are `(row, col)` with **(0,0) at the top-left** (row 0 next to `top` clues, col 0 next to `left` clues).
+- One technique application can emit **several** consecutive lines (placements and candidate shrinks). They are listed by scanning cells in row-major order `(0,0), (0,1), …`, not in “cause then effect” order. Example: left clue `1` on row 1 places `4` at `(1,0)`; the peer cleanup that removes `4` from `(0,0)` can appear as `direct: candidates at (0,0) remove {4}` *above* `direct: place 4 at (1,0)`.
+- When the ladder stalls on easy techniques, later lines use `shallow_case` / `deep_search` with explicit branch / contradiction notes.
 
 Each successful application of a technique increments a counter. The numeric score is:
 
