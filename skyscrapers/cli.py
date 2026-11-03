@@ -371,7 +371,7 @@ def _cmd_print_rules(args: argparse.Namespace) -> int:
     if args.a4:
         print(
             f"Wrote rules booklet → {path.resolve()}  "
-            "(A4 portrait 2×3 of 9×9 cm; front=rules, back=logo; duplex, flip short edge)"
+            "(A4 portrait 2×3 of 9×9 cm; front=rules, back=logo; duplex, flip long edge)"
         )
     else:
         print(f"Wrote rules booklet → {path.resolve()}  (10×10 cm pages)")

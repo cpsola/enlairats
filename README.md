@@ -181,7 +181,7 @@ python -m skyscrapers print_rules --a4
 | `--output` | no       | `physicalgame/instruccions.pdf` (or `…-a4.pdf` with `--a4`) | Output PDF path |
 | `--a4`     | no       | off | Impose all 6 pages on one portrait A4 (9×9 cm tiles); backs show the logo only |
 
-With `--a4`, print **duplex, flip on the short edge**, then cut six **9×9 cm** cards. Each card has one rules page on the front and the Enlairats logo (`cover_v2` on matching parchment, no frame) on the back.
+With `--a4`, print **duplex, flip on the long edge**, then cut six **9×9 cm** cards. Each card has one rules page on the front and the Enlairats logo (`cover_v2` on matching parchment, no frame) on the back.
 
 #### 2.9 CLI (`print_boards`)
 
@@ -238,9 +238,9 @@ Outputs:
 
 #### Rules cards (`print_rules --a4`)
 
-1. Print **duplex**, **portrait**, flip on the **short edge**.
+1. Print **duplex**, **portrait**, flip on the **long edge** (same as board cards; keeps logo backs upright).
 2. **Front:** pages **1–6** in a 2×3 grid of **9×9 cm** tiles (extra margin on the A4 sheet for easier cutting).
-3. **Back:** the same grid with only the game logo (`cover_v2` centred on parchment matched to the art, no decorative frame), column-mirrored so each cut square aligns front/back.
+3. **Back:** the same grid with only the game logo (`cover_v2` centred on parchment matched to the art, no decorative frame). Backs are column-mirrored like the boards PDF; every tile is the same logo, so each cut card gets an upright logo on the reverse.
 4. Cut six **9×9 cm** squares. Stack in order 1→6 (logo faces out on the back of each card).
 5. Optional finish: rounded corners (~3–4 mm) and bind with a **Chicago screw**, Japanese stitch, or a small ring at the top-left.
 
@@ -256,7 +256,7 @@ Without `--a4`, you get six separate **10×10 cm** pages (`physicalgame/instrucc
 #### Quick checklist
 
 - [ ] 100% scale  
-- [ ] Rules (`--a4`): duplex, short-edge flip, portrait; cut **9×9 cm**  
+- [ ] Rules (`--a4`): duplex, long-edge flip, portrait; cut **9×9 cm**  
 - [ ] Boards: duplex, long-edge flip; cut **6 cm** (default)  
 - [ ] Thick cardstock (≥250 g/m²)  
 - [ ] Test sheet before full print  

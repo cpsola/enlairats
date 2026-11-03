@@ -705,8 +705,8 @@ def write_rules_a4_pdf(output_path: Path | None = None) -> Path:
 
     Front: 2×3 grid of 9×9 cm tiles (content designed at 10×10, scaled down).
     Back: same grid with the game logo only (parchment + cover_v2, no frame),
-    column-mirrored for short-edge duplex flip so each cut card has
-    rules on the front and the logo on the back.
+    column-mirrored for long-edge duplex flip so each cut card has
+    rules on the front and an upright logo on the back.
     """
     if output_path is None:
         output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions-a4.pdf"
