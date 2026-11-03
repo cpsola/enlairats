@@ -20,6 +20,9 @@ from .rater import score_to_label
 
 # --- units ---
 CM = 28.346456692913385  # points
+# Page packing: gap 0.45 cm lets default 6 cm cards fit portrait 3×4 on A4.
+PAGE_MARGIN_CM = 1.0
+PAGE_GAP_CM = 0.45
 
 # --- brand palette (cover-inspired) ---
 CREAM = (0.961, 0.941, 0.902)  # #F5F0E6
@@ -457,8 +460,8 @@ def _best_page_layout(
     card_w: float,
     card_h: float,
     *,
-    margin_cm: float = 1.0,
-    gap_cm: float = 0.55,
+    margin_cm: float = PAGE_MARGIN_CM,
+    gap_cm: float = PAGE_GAP_CM,
 ) -> tuple[tuple[float, float], int, int, bool]:
     """Pick portrait or landscape A4 for maximum boards per page."""
     gap = gap_cm * CM
@@ -766,7 +769,7 @@ def write_boards_pdf(
     _register_fonts()
     card_w, card_h, _grid = card_dimensions(board_size_cm)
     page_size, cols, rows, is_landscape = _best_page_layout(card_w, card_h)
-    gap = 0.55 * CM
+    gap = PAGE_GAP_CM * CM
     per_page = cols * rows
 
     output_path = Path(output_path)
