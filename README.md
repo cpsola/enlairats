@@ -296,6 +296,30 @@ Example fields in each file:
 - `difficulty` is the label derived from `difficulty_score` (`easy` / `medium` / `hard` / `expert`).
 - `seed` is the RNG seed used to build that board (solution + clue removal).
 
+### 2.12 Trim boards per difficulty
+
+After generating many puzzles, keep a random sample per difficulty and move the rest aside:
+
+```bash
+scripts/keep_boards.sh <easy> <medium> <hard> <expert>
+
+# Example: keep 10 easy, 15 medium, 10 hard, 5 expert
+scripts/keep_boards.sh 10 15 10 5
+```
+
+| Argument   | Meaning                                      |
+| ---------- | -------------------------------------------- |
+| `<easy>`   | How many `easy` boards to keep               |
+| `<medium>` | How many `medium` boards to keep             |
+| `<hard>`   | How many `hard` boards to keep               |
+| `<expert>` | How many `expert` boards to keep             |
+
+- Reads only top-level `./boards/*.json` (not subfolders).
+- Difficulty comes from each file’s `"difficulty"` field.
+- Excess boards are moved to `boards/to_delete/` (created if needed; same basename overwrites).
+- If a level has fewer boards than requested, all are kept and a warning is printed.
+- Asks for confirmation (`y/N`) before moving anything.
+
 ---
 
 ## 3. For developers
