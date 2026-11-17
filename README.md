@@ -1,22 +1,23 @@
 # Enlairats
 
-**Enlairats** is a Catalan Modernista edition of the classic **Skyscrapers** (also known as **Towers**) logic puzzle: fill a grid with building heights so every border clue is satisfied.
+<img src="paper_prints/graphics/cover_v2.png" alt="Enlairats cover" width="420">
 
-This repository is the themed digital + physical edition — puzzle generator, printable paper cards, rules, artwork, and (soon) 3D-printable game pieces. It is **not** a claim to have invented the underlying Skyscrapers/Towers mechanic; Enlairats is an original presentation and physical product built on that well-known genre.
+**Enlairats** is a Catalan Modernista edition of the classic **Skyscrapers** (also known as Towers) logic puzzle: fill a grid with building heights so every border clue is satisfied.
 
-**Rules text** is in Catalan (`paper_prints/rules/instruccions.md`). This README is in English.
+This repository contains everything needed to create a complete, printable version of the game, including a 3D-printable board and pieces, 2D-printable (paper or cardstock) rules and game boards, and the software used to generate all these materials.
+
+Enlairats is an original presentation built on the well-known genre of Skyscrapers/Towers mechanic.
 
 **License:** [CC BY-NC 4.0](LICENSE) (non-commercial). Bundled fonts are under the SIL OFL — see [NOTICE](NOTICE).
 
 ## Contents
 
 1. [What’s in the repo](#1-whats-in-the-repo)
-2. [Play the puzzle](#2-play-the-puzzle)
-3. [Build the physical game](#3-build-the-physical-game)
-4. [Quick start (software)](#4-quick-start-software)
-5. [CLI reference](#5-cli-reference)
-6. [For developers](#6-for-developers)
-7. [License and attribution](#7-license-and-attribution)
+2. [How to play Skyscrapers/Enlairats](#2-how-to-play-skyscrapersenlairats)
+3. [How to print the game](#3-how-to-print-the-game)
+4. [Software (CLI)](#4-software-cli)
+5. [For developers](#5-for-developers)
+6. [License and attribution](#6-license-and-attribution)
 
 ---
 
@@ -35,66 +36,50 @@ enlairats/
 ├── LICENSE               # CC BY-NC 4.0
 └── NOTICE                # Third-party font notices (OFL)
 ```
-
-| Path | Contents |
-| ---- | -------- |
-| `sample_boards/*.json` | Sample puzzles (12 per difficulty: easy / medium / hard / expert) |
-| `paper_prints/rules/sample_instructions.pdf` | Rules booklet, **10×10 cm** pages |
-| `paper_prints/rules/sample_instructions_a4.pdf` | Home print: six **9×9 cm** cards on one A4 (duplex) |
-| `paper_prints/boards/sample_boards.pdf` | Board cards (default **6×6 cm**) with solution backs |
-| `3d_prints/` | 3D print project — see [`3d_prints/README.md`](3d_prints/README.md) |
-
 ---
 
-## 2. Play the puzzle
+## 2. How to play Skyscrapers/Enlairats
 
-### 2.1 Goal
+The classical (abstract) Skyscrapers game works as follows.
 
-Fill an `N×N` grid with building heights so that every clue around the border is satisfied. There is exactly one correct solution for each generated puzzle.
-
-### 2.2 What you place
-
+The **goal** is to fill an `N×N` grid with building heights so that every clue around the border is satisfied.
 - Each cell gets a height from **1** (shortest) to **N** (tallest).
 - In every **row** and every **column**, each height appears **exactly once** (a Latin square of `1…N`).
+- Numbers on the four borders tell you how many buildings are **visible** looking straight into that row or column from that side. A building is visible if it is **strictly taller** than every building in front of it. Empty clue slots give no information for that edge.
 
-### 2.3 What the clues mean
+There is exactly one correct solution for each generated puzzle.
 
-Numbers on the four borders tell you how many buildings are **visible** looking straight into that row or column from that side.
-
-- A building is visible if it is **strictly taller** than every building in front of it.
-- Empty clue slots (`0` in JSON) give no information for that edge.
-
-In the physical game you place Modernista building miniatures on a board and set numbered clue tokens around the border.
+Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to its game [rulebook](`paper_prints/rules/sample_instructions.pdf).
 
 ---
 
-## 3. Build the physical game
+## 3. How to print the game
 
-### 3.1 Paper (print at home)
+### 3.1 2D prints (aka paper / cardboard)
 
-```bash
-python3 -m skyscrapers print_rules --a4
-python3 -m skyscrapers print_boards
-```
+The [rulebook](`paper_prints/rules/sample_instructions_a4.pdf`) and [sample puzzle boards](`paper_prints/boards/sample_boards.pdf`) ready to print can be found in the  [paper_prints](`paper_prints`) folder.
 
-Or use the sample PDFs already in `paper_prints/`.
+You can also use the accompanying Python code to generate new puzzle boards and regenerate the rulebook (see [Section 4](#4-software-cli)). The scripts allow you to customize the board size and other settings.
 
-**Common settings:** 100% scale, colour, cardstock **250–300 g/m²**, duplex, flip on the **long edge**.
+**Recommended print settings:** 100% scale, colour, cardstock 250–300 g/m², duplex, flip on the **long edge**, bind with a Chicago screw or ring (rulebook).
 
-| Component | Cut size | Notes |
-| --------- | -------- | ----- |
-| Rules (`--a4`) | **9×9 cm** | 2×3 on A4; logo on backs |
-| Board cards | **6×6 cm** (default) | Override with `--board-size` |
-
-Details: [Printing the physical paper game](#55-printing-the-physical-paper-game) below.
-
-### 3.2 3D pieces
+### 3.2 3D prints
 
 STL files for buildings, board, clue tokens, and box will live under `3d_prints/stl/`. See [`3d_prints/README.md`](3d_prints/README.md) (guide scaffolded; files pending).
 
 ---
 
-## 4. Quick start (software)
+## 4. Software (CLI)
+
+The Python package in `skyscrapers/` is a command-line toolkit for the digital side of Enlairats. With it you can:
+
+- **Generate** uniquely solvable Skyscrapers/Enlairats puzzles as JSON
+- **Show**, **play**, and **rate** boards (ASCII view, desktop UI, difficulty trace)
+- **Print** the Catalan rules booklet and Modernista board cards as PDFs
+
+The subsections below cover setup and each command.
+
+### 4.1 Setup
 
 **Requirements:** Python 3.10+, NumPy, ReportLab (for PDF commands), Tkinter (for `play`). Fonts are bundled under `paper_prints/graphics/fonts/`.
 
@@ -102,7 +87,11 @@ STL files for buildings, board, clue tokens, and box will live under `3d_prints/
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
 
+### 4.2 Quick start
+
+```bash
 # Generate boards
 python3 -m skyscrapers generate
 
@@ -118,11 +107,9 @@ python3 -m skyscrapers print_boards
 
 Defaults write JSON to `./sample_boards` and PDFs under `./paper_prints/`.
 
----
+### 4.3 `generate`
 
-## 5. CLI reference
-
-### 5.1 `generate`
+Creates uniquely solvable puzzle boards and writes each one as a JSON file (with clues, solution, and difficulty metadata).
 
 ```bash
 python3 -m skyscrapers generate
@@ -141,7 +128,9 @@ python3 -m skyscrapers generate --count 1 --show --solution
 | `--show` | off | ASCII art after each write |
 | `--solution` | off | With `--show`, fill the grid |
 
-### 5.2 `show` / `play` / `rate`
+### 4.4 `show` / `play` / `rate`
+
+Inspect an existing board in the terminal (`show`), solve it in a desktop window (`play`), or re-score it and print a full technique-ladder trace (`rate`).
 
 ```bash
 python3 -m skyscrapers show sample_boards/<id>.json
@@ -153,11 +142,9 @@ python3 -m skyscrapers rate sample_boards/<id>.json
 
 **Play window:** click a cell, type `1…N`, **Undo** / **Clear cell** / **Reset**. Delete/Backspace clears the selection.
 
-**Rate:** re-runs the technique-ladder rater and prints a full step-by-step trace.
+### 4.5 `print_rules`
 
-### 5.3 `print_rules`
-
-Builds the rules booklet from Catalan copy and art under `paper_prints/graphics/`.
+Builds the printable Enlairats rules booklet PDF from the Catalan rules text and art under `paper_prints/graphics/`.
 
 ```bash
 python3 -m skyscrapers print_rules
@@ -172,9 +159,9 @@ python3 -m skyscrapers print_rules --output paper_prints/rules/sample_instructio
 
 With `--a4`, print **duplex, flip on the long edge**, then cut six **9×9 cm** cards.
 
-### 5.4 `print_boards`
+### 4.6 `print_boards`
 
-Home-printable A4 of Enlairats board cards (Modernista / Amatller-inspired). Fronts + mirrored solution backs for duplex. Only **4×4** boards are accepted.
+Builds a home-printable A4 PDF of Enlairats board cards (Modernista style): puzzle fronts plus mirrored solution backs for duplex printing. Only **4×4** boards are accepted.
 
 ```bash
 python3 -m skyscrapers print_boards
@@ -196,28 +183,9 @@ python3 -m skyscrapers print_boards --board-size 6 --difficulty easy --difficult
 | `hard` | Mestre artesà |
 | `expert` | Arquitecte |
 
-### 5.5 Printing the physical paper game
+### 4.7 Board JSON
 
-```bash
-python3 -m skyscrapers print_rules --a4
-python3 -m skyscrapers print_boards
-```
-
-**Rules (`--a4`):** duplex, portrait, long-edge flip → cut **9×9 cm**. Optional: rounded corners; bind with a Chicago screw, stitch, or ring.
-
-Without `--a4`: six separate **10×10 cm** pages (`sample_instructions.pdf`) — front only.
-
-**Boards:** duplex, long-edge flip → cut **6 cm** squares (default). Test one sheet first.
-
-Checklist:
-
-- [ ] 100% scale
-- [ ] Rules (`--a4`): duplex, long-edge flip; cut **9×9 cm**
-- [ ] Boards: duplex, long-edge flip; cut **6 cm**
-- [ ] Cardstock ≥250 g/m²
-- [ ] Test sheet before a full run
-
-### 5.6 Board JSON
+Each generated puzzle is stored as one JSON file under `sample_boards/`, named with the puzzle id.
 
 ```text
 sample_boards/<id>.json
@@ -245,19 +213,19 @@ sample_boards/<id>.json
 - `id` = first 16 hex chars of SHA-256 over canonical `N` + clues.
 - `difficulty` is derived from `difficulty_score`.
 
-### 5.7 Trim boards per difficulty
+### 4.8 Trim boards per difficulty
+
+Keeps a random sample of boards per difficulty level from `./sample_boards` and moves the rest to `sample_boards/to_delete/` (gitignored). Asks for confirmation before moving.
 
 ```bash
 scripts/keep_boards.sh 10 15 10 5
 ```
 
-Keeps a random sample per level from `./sample_boards`; moves the rest to `sample_boards/to_delete/` (gitignored). Asks for confirmation before moving.
-
 ---
 
-## 6. For developers
+## 5. For developers
 
-### 6.1 Package layout
+### 5.1 Package layout
 
 ```text
 skyscrapers/
@@ -276,7 +244,7 @@ skyscrapers/
   serialize.py     # puzzle id + JSON write
 ```
 
-### 6.2 Generation pipeline
+### 5.2 Generation pipeline
 
 1. **Solution-first** — random Latin square of size `N`.
 2. **Full clues** — all `4N` border visibility counts.
@@ -287,7 +255,7 @@ skyscrapers/
 
 Uniqueness is mandatory (solver limit 2).
 
-### 6.3 Architecture choices
+### 5.3 Architecture choices
 
 | Decision | Rationale |
 | -------- | --------- |
@@ -299,7 +267,7 @@ Uniqueness is mandatory (solver limit 2).
 | Hash id from `N` + clues | Stable playable identity |
 | Per-board seed | Reproducible singles; batches stay non-deterministic |
 
-### 6.4 Difficulty model (`rater.py`)
+### 5.4 Difficulty model (`rater.py`)
 
 Techniques always run easy → hard. After any progress, the rater **restarts from `direct`**.
 
@@ -336,9 +304,11 @@ Coordinates in the `rate` trace are `(row, col)` with `(0,0)` at the top-left.
 
 ---
 
-## 7. License and attribution
+## 6. License and attribution
 
 - **Project** (code, art, rules, sample boards, PDFs, STLs, photos): [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — see [`LICENSE`](LICENSE).
 - **Fonts** (Cormorant Garamond, Cinzel): SIL Open Font License 1.1 — see [`NOTICE`](NOTICE) and `paper_prints/graphics/fonts/`.
+
+The 3D designs (board, buildings, clue tokens, and related STLs) are by [cpsola](https://github.com/cpsola). The box is remixed from ... The 2D art, rules materials, and software were created by [cpsola](https://github.com/cpsola) with Cursor as AI coding assistant.
 
 Please credit **Enlairats** and link back to this repository when you share non-commercial derivatives.
