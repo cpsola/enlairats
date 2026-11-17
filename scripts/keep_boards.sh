@@ -7,12 +7,13 @@
 # Example:
 #   scripts/keep_boards.sh 10 15 10 5
 #
-# Directory: ./boards (only top-level *.json). Excess boards go to boards/to_delete
-# (created if needed; same basename overwrites). Confirmation before moving.
+# Directory: ./sample_boards (only top-level *.json). Excess boards go to
+# sample_boards/to_delete (created if needed; same basename overwrites).
+# Confirmation before moving.
 
 set -euo pipefail
 
-DIR="./boards"
+DIR="./sample_boards"
 TRASH="$DIR/to_delete"
 LEVELS=(easy medium hard expert)
 
@@ -21,10 +22,10 @@ usage() {
 Usage: scripts/keep_boards.sh <easy> <medium> <hard> <expert>
 
 Keep that many boards per difficulty (chosen at random); move the rest to
-boards/to_delete/ (created if needed; existing same-name files are overwritten).
+sample_boards/to_delete/ (created if needed; existing same-name files are overwritten).
 If a level has fewer boards than requested, all are kept and a warning is printed.
 
-Only ./boards/*.json at the top level are considered (not boards/to_delete/).
+Only ./sample_boards/*.json at the top level are considered (not sample_boards/to_delete/).
 EOF
 }
 

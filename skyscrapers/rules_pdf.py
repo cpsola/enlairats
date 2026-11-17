@@ -42,7 +42,7 @@ BODY_LEADING = 9.6
 SMALL_SIZE = 6.5
 
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent
-_GRAPHICS = _PACKAGE_ROOT / "graphics"
+_GRAPHICS = _PACKAGE_ROOT / "paper_prints" / "graphics"
 _BUILDINGS = _GRAPHICS / "buildings"
 _COVER = _GRAPHICS / "cover_v2.png"
 
@@ -671,7 +671,7 @@ def _register_rules_page_forms(c: canvas.Canvas) -> list[str]:
 def write_rules_pdf(output_path: Path | None = None) -> Path:
     """Build the 10×10 cm rules booklet (one square page per sheet)."""
     if output_path is None:
-        output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions.pdf"
+        output_path = _PACKAGE_ROOT / "paper_prints" / "rules" / "sample_instructions.pdf"
     output_path = Path(output_path)
 
     _ensure_rules_assets()
@@ -709,7 +709,7 @@ def write_rules_a4_pdf(output_path: Path | None = None) -> Path:
     rules on the front and an upright logo on the back.
     """
     if output_path is None:
-        output_path = _PACKAGE_ROOT / "physicalgame" / "instruccions-a4.pdf"
+        output_path = _PACKAGE_ROOT / "paper_prints" / "rules" / "sample_instructions_a4.pdf"
     output_path = Path(output_path)
 
     _ensure_rules_assets()

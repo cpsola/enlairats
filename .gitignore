@@ -1,5 +1,6 @@
-# Generated puzzles
+# Local scratch / rejected boards (never commit)
 boards/
+sample_boards/to_delete/
 
 # Python
 __pycache__/
@@ -34,8 +35,3 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-
-# Generated print / rules output
-#physicalgame/*.pdf
-#*.pdf
-!graphics/**

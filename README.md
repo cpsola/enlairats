@@ -1,277 +1,227 @@
-# Skyscrapers board generator (and basic player)
+# Enlairats
 
-Python package that generates **Skyscrapers** (also known as Towers) logic puzzles: unique `N×N` boards with border clues, a difficulty score, and JSON export.
+**Enlairats** is a Catalan Modernista edition of the classic **Skyscrapers** (also known as **Towers**) logic puzzle: fill a grid with building heights so every border clue is satisfied.
+
+This repository is the themed digital + physical edition — puzzle generator, printable paper cards, rules, artwork, and (soon) 3D-printable game pieces. It is **not** a claim to have invented the underlying Skyscrapers/Towers mechanic; Enlairats is an original presentation and physical product built on that well-known genre.
+
+**Rules text** is in Catalan (`paper_prints/rules/instruccions.md`). This README is in English.
+
+**License:** [CC BY-NC 4.0](LICENSE) (non-commercial). Bundled fonts are under the SIL OFL — see [NOTICE](NOTICE).
+
+## Contents
+
+1. [What’s in the repo](#1-whats-in-the-repo)
+2. [Play the puzzle](#2-play-the-puzzle)
+3. [Build the physical game](#3-build-the-physical-game)
+4. [Quick start (software)](#4-quick-start-software)
+5. [CLI reference](#5-cli-reference)
+6. [For developers](#6-for-developers)
+7. [License and attribution](#7-license-and-attribution)
 
 ---
 
-## 1. For players
+## 1. What’s in the repo
 
-### 1.1 Goal
+```text
+enlairats/
+├── skyscrapers/          # Python package: generate, play, rate, print PDFs
+├── sample_boards/        # Sample 4×4 puzzles (JSON)
+├── paper_prints/
+│   ├── graphics/         # Cover art, building art, OFL fonts
+│   ├── rules/            # Catalan rules source + sample PDFs
+│   └── boards/           # Sample printable board PDF
+├── 3d_prints/            # 3D STLs, photos, print guide (STLs coming soon)
+├── scripts/              # Helpers (e.g. trim boards per difficulty)
+├── LICENSE               # CC BY-NC 4.0
+└── NOTICE                # Third-party font notices (OFL)
+```
+
+| Path | Contents |
+| ---- | -------- |
+| `sample_boards/*.json` | Sample puzzles (12 per difficulty: easy / medium / hard / expert) |
+| `paper_prints/rules/sample_instructions.pdf` | Rules booklet, **10×10 cm** pages |
+| `paper_prints/rules/sample_instructions_a4.pdf` | Home print: six **9×9 cm** cards on one A4 (duplex) |
+| `paper_prints/boards/sample_boards.pdf` | Board cards (default **6×6 cm**) with solution backs |
+| `3d_prints/` | 3D print project — see [`3d_prints/README.md`](3d_prints/README.md) |
+
+---
+
+## 2. Play the puzzle
+
+### 2.1 Goal
 
 Fill an `N×N` grid with building heights so that every clue around the border is satisfied. There is exactly one correct solution for each generated puzzle.
 
-### 1.2 What you place
+### 2.2 What you place
 
 - Each cell gets a height from **1** (shortest) to **N** (tallest).
-- In every **row**, each height appears **exactly once**.
-- In every **column**, each height appears **exactly once**.
+- In every **row** and every **column**, each height appears **exactly once** (a Latin square of `1…N`).
 
-So the grid is a Latin square of symbols `1…N`.
+### 2.3 What the clues mean
 
-### 1.3 What the clues mean
+Numbers on the four borders tell you how many buildings are **visible** looking straight into that row or column from that side.
 
-Numbers on the four borders tell you how many buildings are **visible** when looking straight into that row or column from that side.
-
-- You look along the line toward the opposite edge.
 - A building is visible if it is **strictly taller** than every building in front of it.
-- Shorter buildings behind a taller one are hidden.
+- Empty clue slots (`0` in JSON) give no information for that edge.
 
-Empty clue slots (no number / `0` in the JSON) give no information for that edge.
+In the physical game you place Modernista building miniatures on a board and set numbered clue tokens around the border.
 
 ---
-## 2. For users
 
-### 2.1 Requirements
+## 3. Build the physical game
 
-- Python 3.10+
-- NumPy
-- ReportLab (for `print_boards` / `print_rules`)
-- Tkinter (stdlib; needed for `play`)
-- Bundled fonts in `graphics/fonts/` (OFL)
+### 3.1 Paper (print at home)
+
+```bash
+python3 -m skyscrapers print_rules --a4
+python3 -m skyscrapers print_boards
+```
+
+Or use the sample PDFs already in `paper_prints/`.
+
+**Common settings:** 100% scale, colour, cardstock **250–300 g/m²**, duplex, flip on the **long edge**.
+
+| Component | Cut size | Notes |
+| --------- | -------- | ----- |
+| Rules (`--a4`) | **9×9 cm** | 2×3 on A4; logo on backs |
+| Board cards | **6×6 cm** (default) | Override with `--board-size` |
+
+Details: [Printing the physical paper game](#55-printing-the-physical-paper-game) below.
+
+### 3.2 3D pieces
+
+STL files for buildings, board, clue tokens, and box will live under `3d_prints/stl/`. See [`3d_prints/README.md`](3d_prints/README.md) (guide scaffolded; files pending).
+
+---
+
+## 4. Quick start (software)
+
+**Requirements:** Python 3.10+, NumPy, ReportLab (for PDF commands), Tkinter (for `play`). Fonts are bundled under `paper_prints/graphics/fonts/`.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Generate boards
+python3 -m skyscrapers generate
+
+# Show / play / rate a sample
+python3 -m skyscrapers show sample_boards/<id>.json
+python3 -m skyscrapers play --random
+python3 -m skyscrapers rate sample_boards/<id>.json
+
+# Printable PDFs
+python3 -m skyscrapers print_rules --a4
+python3 -m skyscrapers print_boards
 ```
 
-### 2.2 Generate boards
+Defaults write JSON to `./sample_boards` and PDFs under `./paper_prints/`.
 
-Run from the project root:
+---
+
+## 5. CLI reference
+
+### 5.1 `generate`
 
 ```bash
 python3 -m skyscrapers generate
-```
-
-Defaults: `--size 4`, `--count 10`, clues `1-4N`, `--max-attempts 1000`, `--output-dir ./boards`.
-
-#### 2.3 Examples
-
-```bash
-# Explicit defaults (same as bare `generate`)
-python3 -m skyscrapers generate --size 4 --count 10
-
-# Three 4×4 puzzles, clue count between 6 and 12
-python3 -m skyscrapers generate --size 4 --count 3 --clues 6-12 --output-dir ./boards
-
-# One 5×5 puzzle (clue interval defaults to 1..4N)
-python3 -m skyscrapers generate --size 5 --count 1
-
-# Allow more retries if generation fails often
-python3 -m skyscrapers generate --size 6 --count 2 --clues 12-20 --max-attempts 2000
-
-# Generate and print each board (playable view)
+python3 -m skyscrapers generate --size 4 --count 3 --clues 6-12 --output-dir ./sample_boards
 python3 -m skyscrapers generate --count 2 --show
-
-# Generate and print each board with the solution filled in
 python3 -m skyscrapers generate --count 1 --show --solution
-
-# Show an existing board JSON
-python3 -m skyscrapers show boards/<id>.json
-python3 -m skyscrapers show boards/<id>.json --solution
-
-# Play a specific board (desktop window)
-python3 -m skyscrapers play boards/<id>.json
-
-# Play a random board from ./boards
-python3 -m skyscrapers play --random
-python3 -m skyscrapers play --random --output-dir ./boards
-
-# Inspect rater technique trace for a board
-python3 -m skyscrapers rate boards/<id>.json
-
-# Printable Modernista PDF (reads ./boards, writes to physicalgame/)
-python3 -m skyscrapers print_boards
-python3 -m skyscrapers print_boards --board-size 5 --difficulty Oficial --output partida.pdf
 ```
 
-#### 2.4 CLI options (`generate`)
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--size` | `4` | Board size `N` |
+| `--count` | `10` | Number of boards |
+| `--clues` | `1-4N` | Clue-count interval `MIN-MAX` |
+| `--max-attempts` | `1000` | Max attempts per board |
+| `--output-dir` | `./sample_boards` | Output directory |
+| `--show` | off | ASCII art after each write |
+| `--solution` | off | With `--show`, fill the grid |
 
-
-| Option           | Required | Default    | Description                                               |
-| ---------------- | -------- | ---------- | --------------------------------------------------------- |
-| `--size`         | no       | `4`        | Board size `N`                                            |
-| `--count`        | no       | `10`       | Number of boards to generate                              |
-| `--clues`        | no       | `1-4N`     | Inclusive clue-count interval `MIN-MAX`                   |
-| `--max-attempts` | no       | `1000`     | Max generation attempts **per board**                     |
-| `--output-dir`   | no       | `./boards` | Directory for output JSON files                           |
-| `--show`         | no       | off        | Print each board as ASCII art to stdout after writing it  |
-| `--solution`     | no       | off        | With `--show`, fill cells with the solution               |
-
-
-#### 2.5 CLI (`show`)
-
-Print one existing board JSON as a classic bordered ASCII grid (stdout only):
+### 5.2 `show` / `play` / `rate`
 
 ```bash
-python3 -m skyscrapers show path/to/board.json
-python3 -m skyscrapers show path/to/board.json --solution
+python3 -m skyscrapers show sample_boards/<id>.json
+python3 -m skyscrapers show sample_boards/<id>.json --solution
+python3 -m skyscrapers play sample_boards/<id>.json
+python3 -m skyscrapers play --random --output-dir ./sample_boards
+python3 -m skyscrapers rate sample_boards/<id>.json
 ```
 
-| Option       | Required | Default | Description                                      |
-| ------------ | -------- | ------- | ------------------------------------------------ |
-| `path`       | yes      | —       | Path to a board JSON file                        |
-| `--solution` | no       | off     | Fill cells with the solution (default: playable) |
+**Play window:** click a cell, type `1…N`, **Undo** / **Clear cell** / **Reset**. Delete/Backspace clears the selection.
 
-Metadata printed with the grid: `id`, `N`, `clue_count`, `difficulty_score`, `difficulty` (label from score), `seed`, and `view`. Colors are used when stdout is a terminal.
+**Rate:** re-runs the technique-ladder rater and prints a full step-by-step trace.
 
-#### 2.6 CLI (`play`)
+### 5.3 `print_rules`
 
-Open a desktop window (Tkinter) to play one board. Clues are shown; the grid starts empty. When every cell is filled, the grid is checked automatically against the stored solution.
+Builds the rules booklet from Catalan copy and art under `paper_prints/graphics/`.
 
 ```bash
-python3 -m skyscrapers play path/to/board.json
-python3 -m skyscrapers play --random
-python3 -m skyscrapers play --random --output-dir ./boards
+python3 -m skyscrapers print_rules
+python3 -m skyscrapers print_rules --a4
+python3 -m skyscrapers print_rules --output paper_prints/rules/sample_instructions.pdf
 ```
 
-| Option         | Required | Default    | Description                                      |
-| -------------- | -------- | ---------- | ------------------------------------------------ |
-| `path`         | one of\* | —          | Path to a board JSON file                        |
-| `--random`     | one of\* | off        | Pick a random `*.json` from `--output-dir`       |
-| `--output-dir` | no       | `./boards` | Directory used with `--random`                   |
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--output` | `paper_prints/rules/sample_instructions.pdf` (or `…_a4.pdf` with `--a4`) | Output path |
+| `--a4` | off | Impose all 6 pages on one portrait A4 (9×9 cm tiles); backs = logo |
 
-\*Provide either `path` or `--random` (not both).
+With `--a4`, print **duplex, flip on the long edge**, then cut six **9×9 cm** cards.
 
-**In the window:** click a cell, type `1…N` to place a height. Buttons: **Undo**, **Clear cell**, **Reset**. Delete/Backspace also clears the selected cell. Close the window to exit. Metadata (id, N, clue count, score/label, seed, file) is shown above the grid.
+### 5.4 `print_boards`
 
-Exit codes: `0` on normal close (window close, or after solving); `1` on startup errors (missing file, invalid JSON, empty directory, no display).
-
-#### 2.7 CLI (`rate`)
-
-Re-run the technique-ladder rater on a board JSON and print the score breakdown plus a **full step-by-step trace** (placements, candidate eliminations, shallow cases, deep-search branches).
-
-```bash
-python3 -m skyscrapers rate boards/<id>.json
-```
-
-| Option | Required | Default | Description               |
-| ------ | -------- | ------- | ------------------------- |
-| `path` | yes      | —       | Path to a board JSON file |
-
-Coordinates in the trace are 0-based `(row, col)` with **(0,0) = top-left**.
-
-How to read the numbered trace: each line is tagged with the technique that just ran (`direct`, `latin`, …). Several lines can share one technique step (one placement plus its peer eliminations). Those sibling lines are listed in **row-major cell order**, so a `candidates … remove` line can appear *before* the `place` that caused it. See [§3.4](#34-difficulty-model-raterpy) for the technique ladder and restart rules.
-
-#### 2.8 CLI (`print_rules`)
-
-Build the physical-game **rules booklet** as a square PDF (10×10 cm pages), using Catalan text from `physicalgame/instruccions.md` and cover/building art from `graphics/`.
-
-```bash
-source .venv/bin/activate
-python -m skyscrapers print_rules
-python -m skyscrapers print_rules --output physicalgame/instruccions.pdf
-
-# Home-print: all 6 pages on one duplex portrait A4 (2×3 grid; logo on backs)
-python -m skyscrapers print_rules --a4
-```
-
-| Option     | Required | Default | Description |
-| ---------- | -------- | ------- | ----------- |
-| `--output` | no       | `physicalgame/instruccions.pdf` (or `…-a4.pdf` with `--a4`) | Output PDF path |
-| `--a4`     | no       | off | Impose all 6 pages on one portrait A4 (9×9 cm tiles); backs show the logo only |
-
-With `--a4`, print **duplex, flip on the long edge**, then cut six **9×9 cm** cards. Each card has one rules page on the front and the Enlairats logo (`cover_v2` on matching parchment, no frame) on the back.
-
-#### 2.9 CLI (`print_boards`)
-
-Build a home-printable **A4 PDF** of boards for the physical game **Enlairats** (Catalan Modernista / Amatller-inspired). Multiple boards per page; packing adapts to `--board-size`. Portrait or landscape is chosen automatically to fit more cards. Each sheet of fronts is followed by a mirrored sheet of **solution backs** for duplex printing.
+Home-printable A4 of Enlairats board cards (Modernista / Amatller-inspired). Fronts + mirrored solution backs for duplex. Only **4×4** boards are accepted.
 
 ```bash
 python3 -m skyscrapers print_boards
-python3 -m skyscrapers print_boards --input-dir ./boards --output physicalgame/enlairats-boards.pdf
+python3 -m skyscrapers print_boards --input-dir ./sample_boards --output paper_prints/boards/sample_boards.pdf
 python3 -m skyscrapers print_boards --board-size 6 --difficulty easy --difficulty "Mestre artesà"
 ```
 
-| Option         | Required | Default                 | Description |
-| -------------- | -------- | ----------------------- | ----------- |
-| `--input-dir`  | no       | `./boards`                        | Folder of board JSON files (sorted by filename) |
-| `--output`     | no       | `./physicalgame/enlairats-boards.pdf` | Output PDF path |
-| `--board-size` | no       | `6`                     | Outer **square card** side length in **cm** |
-| `--difficulty` | no       | all                     | Filter (repeatable). English `easy/medium/hard/expert` or Catalan `Aprenent/Oficial/Mestre artesà/Arquitecte` |
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--input-dir` | `./sample_boards` | Board JSON folder |
+| `--output` | `./paper_prints/boards/sample_boards.pdf` | Output PDF |
+| `--board-size` | `6` | Outer square card side (**cm**) |
+| `--difficulty` | all | Filter (repeatable); English or Catalan labels |
 
-Each card **front** shows: clues + empty grid, Catalan level name with a distinct floral motif (4–7 petals by level), and a small centred id. The **back** shows the solution with building miniatures and coloured rank badges. Only **4×4** boards are accepted; any other size aborts the run.
+| JSON `difficulty` | Printed label |
+| ----------------- | ------------- |
+| `easy` | Aprenent |
+| `medium` | Oficial |
+| `hard` | Mestre artesà |
+| `expert` | Arquitecte |
 
-Printed level names:
-
-| JSON `difficulty` | Printed label   |
-| ----------------- | --------------- |
-| easy              | Aprenent        |
-| medium            | Oficial         |
-| hard              | Mestre artesà   |
-| expert            | Arquitecte      |
-
-Requires ReportLab and the bundled fonts under `graphics/fonts/` (see `requirements.txt`; use the project venv).
-
-### 2.10 Printing the physical game
-
-Generate the PDFs first (from the project root, with the venv active):
+### 5.5 Printing the physical paper game
 
 ```bash
-python -m skyscrapers print_rules --a4
-python -m skyscrapers print_boards
+python3 -m skyscrapers print_rules --a4
+python3 -m skyscrapers print_boards
 ```
 
-Outputs:
+**Rules (`--a4`):** duplex, portrait, long-edge flip → cut **9×9 cm**. Optional: rounded corners; bind with a Chicago screw, stitch, or ring.
 
-| File | Contents |
-| ---- | -------- |
-| `physicalgame/instruccions-a4.pdf` | One portrait A4 duplex sheet: 2×3 grid of **9×9 cm** rules pages; logo on all backs |
-| `physicalgame/enlairats-boards.pdf` | Board cards: front sheets + mirrored solution backs |
-| `physicalgame/instruccions.pdf` | Optional: six separate **10×10 cm** pages (`print_rules` without `--a4`) |
+Without `--a4`: six separate **10×10 cm** pages (`sample_instructions.pdf`) — front only.
 
-#### Common print settings
+**Boards:** duplex, long-edge flip → cut **6 cm** squares (default). Test one sheet first.
 
-- Scale **100%** / “actual size” — do **not** use “fit to page”.
-- Colour, best quality your printer allows.
-- Paper: **250–300 g/m²** cardstock (matt or lightly textured). Thin paper lets board solutions or logo backs show through.
+Checklist:
 
-#### Rules cards (`print_rules --a4`)
+- [ ] 100% scale
+- [ ] Rules (`--a4`): duplex, long-edge flip; cut **9×9 cm**
+- [ ] Boards: duplex, long-edge flip; cut **6 cm**
+- [ ] Cardstock ≥250 g/m²
+- [ ] Test sheet before a full run
 
-1. Print **duplex**, **portrait**, flip on the **long edge** (same as board cards; keeps logo backs upright).
-2. **Front:** pages **1–6** in a 2×3 grid of **9×9 cm** tiles (extra margin on the A4 sheet for easier cutting).
-3. **Back:** the same grid with only the game logo (`cover_v2` centred on parchment matched to the art, no decorative frame). Backs are column-mirrored like the boards PDF; every tile is the same logo, so each cut card gets an upright logo on the reverse.
-4. Cut six **9×9 cm** squares. Stack in order 1→6 (logo faces out on the back of each card).
-5. Optional finish: rounded corners (~3–4 mm) and bind with a **Chicago screw**, Japanese stitch, or a small ring at the top-left.
-
-Without `--a4`, you get six separate **10×10 cm** pages (`physicalgame/instruccions.pdf`) — front only, no logo backs.
-
-#### Board cards (`print_boards`)
-
-1. Print the whole PDF **duplex**, flip on the **long edge** (the layout mirrors columns so fronts and solution backs align).
-2. Do a **one-sheet test** (first front + its back) before a full run.
-3. Cut out each square card (default outer size **6 cm**; override with `--board-size`).
-4. Optional: rounded corners and a light matt laminate for table use.
-
-#### Quick checklist
-
-- [ ] 100% scale  
-- [ ] Rules (`--a4`): duplex, long-edge flip, portrait; cut **9×9 cm**  
-- [ ] Boards: duplex, long-edge flip; cut **6 cm** (default)  
-- [ ] Thick cardstock (≥250 g/m²)  
-- [ ] Test sheet before full print  
-
-### 2.11 Output
-
-Each board is written as its own JSON file, named with the puzzle id:
+### 5.6 Board JSON
 
 ```text
-boards/<id>.json
+sample_boards/<id>.json
 ```
-
-The CLI also prints a human-readable difficulty label (`easy` / `medium` / `hard` / `expert`) derived from the numeric score.
-
-Example fields in each file:
 
 ```json
 {
@@ -291,113 +241,74 @@ Example fields in each file:
 }
 ```
 
-- `0` in a clue array means **no clue** on that edge cell.
-- `id` is the first 16 hex characters of SHA-256 over a canonical encoding of `N` + clues.
-- `difficulty` is the label derived from `difficulty_score` (`easy` / `medium` / `hard` / `expert`).
-- `seed` is the RNG seed used to build that board (solution + clue removal).
+- `0` in a clue array = no clue on that edge.
+- `id` = first 16 hex chars of SHA-256 over canonical `N` + clues.
+- `difficulty` is derived from `difficulty_score`.
 
-### 2.12 Trim boards per difficulty
-
-After generating many puzzles, keep a random sample per difficulty and move the rest aside:
+### 5.7 Trim boards per difficulty
 
 ```bash
-scripts/keep_boards.sh <easy> <medium> <hard> <expert>
-
-# Example: keep 10 easy, 15 medium, 10 hard, 5 expert
 scripts/keep_boards.sh 10 15 10 5
 ```
 
-| Argument   | Meaning                                      |
-| ---------- | -------------------------------------------- |
-| `<easy>`   | How many `easy` boards to keep               |
-| `<medium>` | How many `medium` boards to keep             |
-| `<hard>`   | How many `hard` boards to keep               |
-| `<expert>` | How many `expert` boards to keep             |
-
-- Reads only top-level `./boards/*.json` (not subfolders).
-- Difficulty comes from each file’s `"difficulty"` field.
-- Excess boards are moved to `boards/to_delete/` (created if needed; same basename overwrites).
-- If a level has fewer boards than requested, all are kept and a warning is printed.
-- Asks for confirmation (`y/N`) before moving anything.
+Keeps a random sample per level from `./sample_boards`; moves the rest to `sample_boards/to_delete/` (gitignored). Asks for confirmation before moving.
 
 ---
 
-## 3. For developers
+## 6. For developers
 
-### 3.1 Package layout
+### 6.1 Package layout
 
 ```text
 skyscrapers/
   __main__.py      # python -m skyscrapers
   cli.py           # argparse CLI
-  display.py       # ASCII board rendering (show / generate --show)
+  display.py       # ASCII board rendering
   play.py          # Tkinter play UI
-  boards_pdf.py    # Modernista printable board cards (print_boards)
-  rules_pdf.py     # 10×10 cm rules booklet (print_rules)
+  boards_pdf.py    # printable board cards
+  rules_pdf.py     # rules booklet PDF
   latin.py         # random Latin-square solutions
   visibility.py    # visible-count + clues-from-grid
-  clues.py         # clue slots, counting, canonical encoding
-  solver.py        # backtracking; counts solutions up to a limit
+  clues.py         # clue slots, counting, encoding
+  solver.py        # backtracking; uniqueness
   generator.py     # fill → reduce clues → validate → rate
-  rater.py         # technique-ladder difficulty scoring
+  rater.py         # technique-ladder difficulty
   serialize.py     # puzzle id + JSON write
-graphics/
-  cover.png        # Enlairats cover art (style reference)
-  fonts/           # OFL fonts for PDF printing
 ```
 
-### 3.2 Generation pipeline
+### 6.2 Generation pipeline
 
-1. **Solution-first** — generate a random Latin square of size `N` (this is the intended solution).
-2. **Full clues** — compute all `4N` border visibility counts from that grid.
-3. **Target clue count** — pick `k` uniformly in `[lo, hi]` (default `1…4N`).
-4. **Removal-from-full** — drop clues in random order while the puzzle stays **uniquely** solvable; stop at `k` or when no further removal is possible.
-5. **Interval acceptance** — keep the board if the final clue count lies in `[lo, hi]` (nearest achievable to `k` inside the interval). Otherwise retry (up to `--max-attempts` per board).
-6. **Rate** — run the technique-ladder rater; store `difficulty_score` and `difficulty` (label) in JSON.
-7. **Serialize** — one JSON file per board, filename = puzzle id.
+1. **Solution-first** — random Latin square of size `N`.
+2. **Full clues** — all `4N` border visibility counts.
+3. **Target clue count** — pick `k` in `[lo, hi]` (default `1…4N`).
+4. **Removal** — drop clues while the puzzle stays **uniquely** solvable; stop at `k` when possible.
+5. **Accept** if final clue count is in `[lo, hi]`; else retry.
+6. **Rate** with the technique ladder; write JSON.
 
-Uniqueness is mandatory: every published clue set has exactly one solution. The checker searches until it finds a second solution (limit 2) and rejects if it does.
+Uniqueness is mandatory (solver limit 2).
 
-### 3.3 Architecture choices
+### 6.3 Architecture choices
 
+| Decision | Rationale |
+| -------- | --------- |
+| Solution-first + clue removal | Real solution; uniqueness easier than clue-first |
+| Uniform random clue removal | No positional bias |
+| Nearest count inside interval | Exact `k` not always reachable |
+| Separate solver vs rater | Validity vs human-like hardness |
+| Stdlib + NumPy | Simple grids for v1 |
+| Hash id from `N` + clues | Stable playable identity |
+| Per-board seed | Reproducible singles; batches stay non-deterministic |
 
-| Decision                           | Rationale                                                                                 |
-| ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| Solution-first + clue removal      | Always has a real solution; uniqueness is easier to control than clue-first generation    |
-| Uniform random clue removal        | Matches the “uniform random kept slots” requirement without biasing positions             |
-| Nearest count inside interval      | Exact `k` is not always reachable; retry only when the result falls outside `[lo, hi]`    |
-| Separate solver vs rater           | Solver proves uniqueness; rater estimates *human-like* hardness without changing validity |
-| Stdlib + NumPy                     | Grids stay simple (`ndarray`); no heavier constraint libraries required for v1            |
-| Hash id from `N` + clues only      | Stable identity for the playable puzzle; solution is derived/unique from clues            |
-| Per-board seed, no global `--seed` | Reproducible single boards via metadata; batch runs stay non-deterministic by design      |
-| Slow OK                            | Correct uniqueness and readable technique rating preferred over micro-optimizations       |
+### 6.4 Difficulty model (`rater.py`)
 
+Techniques always run easy → hard. After any progress, the rater **restarts from `direct`**.
 
-### 3.4 Difficulty model (`rater.py`)
-
-The rater does **not** decide uniqueness (the solver already did). It re-solves the puzzle with a fixed ladder of human-like techniques and scores how much work that took.
-
-#### Technique order (easy → hard)
-
-Techniques always run in this fixed order. After **any** progress, the rater **restarts from the top** (`direct`). It only tries a harder technique when every easier one made no change. That is why a `latin` or `visibility` step in the `rate` trace is never “chosen instead of” an available direct move — easier work was already exhausted for that pass.
-
-1. **`direct`** — Immediate edge facts from border clues:
-   - Clue `1` → place `N` on the near-edge cell.
-   - Clue `N` → force the strictly increasing line `1…N` from that edge.
-   - Edges are scanned in order **top → bottom → left → right**. Placing a height also strips that height from the rest of its row and column (Latin peer cleanup), and those eliminations are still tagged `direct` in the trace.
-2. **`latin`** — Row/column uniqueness: a cell with one candidate (naked single), or a height that fits in only one cell of a row/column (hidden single).
-3. **`visibility`** — Drop candidates that break tallest-building bounds (e.g. where `N` may sit given a near/far clue).
-4. **`line_enum`** — For each row/column, list Latin permutations still allowed by cell candidates and both end clues; intersect to shrink candidates.
-5. **`shallow_case`** — For a cell with 2–3 options, try each with easy propagation; eliminate options that contradict (depth-1 “what if”).
-6. **`deep_search`** — Branch on a remaining cell and recurse until the unique solution is found.
-
-#### Reading the `rate` trace
-
-- Coordinates are `(row, col)` with **(0,0) at the top-left** (row 0 next to `top` clues, col 0 next to `left` clues).
-- One technique application can emit **several** consecutive lines (placements and candidate shrinks). They are listed by scanning cells in row-major order `(0,0), (0,1), …`, not in “cause then effect” order. Example: left clue `1` on row 1 places `4` at `(1,0)`; the peer cleanup that removes `4` from `(0,0)` can appear as `direct: candidates at (0,0) remove {4}` *above* `direct: place 4 at (1,0)`.
-- When the ladder stalls on easy techniques, later lines use `shallow_case` / `deep_search` with explicit branch / contradiction notes.
-
-Each successful application of a technique increments a counter. The numeric score is:
+1. **`direct`** — edge facts (clue `1` → place `N`; clue `N` → line `1…N`).
+2. **`latin`** — naked / hidden singles.
+3. **`visibility`** — tallest-building bounds.
+4. **`line_enum`** — permute remaining Latin lines vs end clues.
+5. **`shallow_case`** — depth-1 case split on 2–3 candidates.
+6. **`deep_search`** — branch until the unique solution.
 
 ```text
 score = Σ (weight[technique] × count[technique])
@@ -405,24 +316,29 @@ score = Σ (weight[technique] × count[technique])
       + 8.0 × deep_search_max_depth
 ```
 
-| Technique       | Weight |
-| --------------- | ------ |
-| `direct`        | 1.0    |
-| `latin`         | 2.0    |
-| `visibility`    | 4.0    |
-| `line_enum`     | 8.0    |
-| `shallow_case`  | 20.0   |
-| `deep_search`   | 40.0   |
+| Technique | Weight |
+| --------- | ------ |
+| `direct` | 1.0 |
+| `latin` | 2.0 |
+| `visibility` | 4.0 |
+| `line_enum` | 8.0 |
+| `shallow_case` | 20.0 |
+| `deep_search` | 40.0 |
 
-Harder steps cost more per use; deep search also adds cost for how wide/deep the branching was. JSON stores both `difficulty_score` and `difficulty` (label).
-
-| Label  | Score |
-| ------ | ----- |
-| easy   | < 25  |
-| medium | < 70  |
-| hard   | < 150 |
+| Label | Score |
+| ----- | ----- |
+| easy | < 25 |
+| medium | < 70 |
+| hard | < 150 |
 | expert | ≥ 150 |
 
-Weights and thresholds are module-level constants in `rater.py` (intended to be tuned later).
+Coordinates in the `rate` trace are `(row, col)` with `(0,0)` at the top-left.
 
+---
 
+## 7. License and attribution
+
+- **Project** (code, art, rules, sample boards, PDFs, STLs, photos): [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — see [`LICENSE`](LICENSE).
+- **Fonts** (Cormorant Garamond, Cinzel): SIL Open Font License 1.1 — see [`NOTICE`](NOTICE) and `paper_prints/graphics/fonts/`.
+
+Please credit **Enlairats** and link back to this repository when you share non-commercial derivatives.

@@ -1,0 +1,25 @@
+Enlairats — third-party notices
+================================
+
+Unless noted below, this repository is licensed under the Creative Commons
+Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). See LICENSE.
+
+
+Bundled fonts (SIL Open Font License 1.1)
+----------------------------------------
+
+The following fonts under `paper_prints/graphics/fonts/` are not covered by CC BY-NC 4.0.
+They remain under the SIL Open Font License, Version 1.1:
+
+- Cormorant Garamond
+  https://fonts.google.com/specimen/Cormorant+Garamond
+
+- Cinzel
+  https://fonts.google.com/specimen/Cinzel
+
+Full OFL text: https://openfontlicense.org/
+
+These fonts may be used, studied, modified, and redistributed under the terms of
+the OFL. The OFL does not restrict commercial use of the fonts themselves; that
+is independent of the CC BY-NC 4.0 license that applies to the rest of this
+project (code, art, rules, sample boards, STLs, and photos).

@@ -68,8 +68,8 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("boards"),
-        help="Directory for per-board JSON files (default: ./boards)",
+        default=Path("sample_boards"),
+        help="Directory for per-board JSON files (default: ./sample_boards)",
     )
     gen.add_argument(
         "--show",
@@ -110,8 +110,8 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("boards"),
-        help="Directory used with --random (default: ./boards)",
+        default=Path("sample_boards"),
+        help="Directory used with --random (default: ./sample_boards)",
     )
 
     rate = sub.add_parser(
@@ -131,14 +131,14 @@ def build_parser() -> argparse.ArgumentParser:
     pdf.add_argument(
         "--input-dir",
         type=Path,
-        default=Path("boards"),
-        help="Folder of board JSON files (default: ./boards)",
+        default=Path("sample_boards"),
+        help="Folder of board JSON files (default: ./sample_boards)",
     )
     pdf.add_argument(
         "--output",
         type=Path,
-        default=Path("physicalgame/enlairats-boards.pdf"),
-        help="Output PDF path (default: physicalgame/enlairats-boards.pdf)",
+        default=Path("paper_prints/boards/sample_boards.pdf"),
+        help="Output PDF path (default: paper_prints/boards/sample_boards.pdf)",
     )
     pdf.add_argument(
         "--board-size",
@@ -167,8 +167,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help=(
-            "Output PDF path (default: physicalgame/instruccions.pdf, "
-            "or physicalgame/instruccions-a4.pdf with --a4)"
+            "Output PDF path (default: paper_prints/rules/sample_instructions.pdf, "
+            "or paper_prints/rules/sample_instructions_a4.pdf with --a4)"
         ),
     )
     rules.add_argument(
