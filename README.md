@@ -57,7 +57,7 @@ Enlairats brings this abstract puzzle to life: instead of entering numbers in a 
 
 ### 3.1 2D prints (aka paper / cardboard)
 
-The rulebook ([Catalan A4](2d_prints/rules/sample_instructions_a4.pdf) / [English A4](2d_prints/rules/sample_instructions_en_a4.pdf)) and [sample puzzle boards](2d_prints/boards/sample_boards.pdf) ready to print can be found in the [2d_prints](2d_prints/) folder.
+The rulebook ([Catalan A4](2d_prints/rules/sample_instructions_a4.pdf) / [English A4](2d_prints/rules/sample_instructions_en_a4.pdf)) and sample puzzle boards ([Catalan](2d_prints/boards/sample_boards.pdf) / [English](2d_prints/boards/sample_boards_en.pdf)) ready to print can be found in the [2d_prints](2d_prints/) folder.
 
 You can also use the accompanying Python code to generate new puzzle boards and regenerate the rulebook (see [Section 4](#4-software-cli)). The scripts allow you to customize the board size and other settings.
 
