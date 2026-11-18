@@ -1,7 +1,3 @@
-# Local scratch / rejected boards (never commit)
-boards/
-sample_boards/to_delete/
-
 # Python
 __pycache__/
 *.py[cod]

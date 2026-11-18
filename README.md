@@ -65,7 +65,7 @@ You can also use the accompanying Python code to generate new puzzle boards and 
 
 ### 3.2 3D prints
 
-STL files for buildings, board, clue tokens, and box are under `3d_prints/stl/`. See [`3d_prints/README.md`](3d_prints/README.md) for the full-game print table, settings, and box remix attribution.
+STL files for buildings, board, clue tokens, and box are under [`3d_prints/stl/`](3d_prints/stl/). See [`3d_prints/README.md`](3d_prints/README.md) for the full-game print table, settings, and box remix attribution.
 
 ---
 
