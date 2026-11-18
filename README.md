@@ -1,6 +1,8 @@
 # Enlairats
 
-<img src="2d_prints/graphics/cover_v2.png" alt="Enlairats cover" width="420">
+<p align="center">
+  <img src="2d_prints/graphics/cover_v2.png" alt="Enlairats cover" width="420">
+</p>
 
 **Enlairats** is a Catalan Modernista edition of the classic **Skyscrapers** (also known as Towers) logic puzzle: fill a grid with building heights so every border clue is satisfied.
 
