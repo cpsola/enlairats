@@ -29,7 +29,7 @@ enlairats/
 ├── sample_boards/        # Sample 4×4 puzzles (JSON)
 ├── 2d_prints/
 │   ├── graphics/         # Cover art, building art, OFL fonts
-│   ├── rules/            # Catalan rules source + sample PDFs
+│   ├── rules/            # Rules source + sample PDFs (CA/EN)
 │   └── boards/           # Sample printable board PDF
 ├── 3d_prints/            # 3D STLs, photos, print guide
 ├── scripts/              # Helpers (e.g. trim boards per difficulty)
@@ -49,7 +49,7 @@ The **goal** is to fill an `N×N` grid with building heights so that every clue 
 
 There is exactly one correct solution for each generated puzzle.
 
-Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to its game [rulebook](2d_prints/rules/sample_instructions.pdf).
+Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to the [rulebook (Catalan)](2d_prints/rules/sample_instructions.pdf) or the [rulebook (English)](2d_prints/rules/sample_instructions_en.pdf).
 
 ---
 
@@ -57,7 +57,7 @@ Enlairats brings this abstract puzzle to life: instead of entering numbers in a 
 
 ### 3.1 2D prints (aka paper / cardboard)
 
-The [rulebook](2d_prints/rules/sample_instructions_a4.pdf) and [sample puzzle boards](2d_prints/boards/sample_boards.pdf) ready to print can be found in the [2d_prints](2d_prints/) folder.
+The rulebook ([Catalan A4](2d_prints/rules/sample_instructions_a4.pdf) / [English A4](2d_prints/rules/sample_instructions_en_a4.pdf)) and [sample puzzle boards](2d_prints/boards/sample_boards.pdf) ready to print can be found in the [2d_prints](2d_prints/) folder.
 
 You can also use the accompanying Python code to generate new puzzle boards and regenerate the rulebook (see [Section 4](#4-software-cli)). The scripts allow you to customize the board size and other settings.
 
@@ -75,7 +75,7 @@ The Python package in `skyscrapers/` is a command-line toolkit for the digital s
 
 - **Generate** uniquely solvable Skyscrapers/Enlairats puzzles as JSON
 - **Show**, **play**, and **rate** boards (ASCII view, desktop UI, difficulty trace)
-- **Print** the Catalan rules booklet and Modernista board cards as PDFs
+- **Print** the rules booklet (Catalan or English) and Modernista board cards as PDFs
 
 The subsections below cover setup and each command.
 
@@ -144,27 +144,38 @@ python3 -m skyscrapers rate sample_boards/<id>.json
 
 ### 4.5 `print_rules`
 
-Builds the printable Enlairats rules booklet PDF from the Catalan rules text and art under `2d_prints/graphics/`.
+Builds the printable Enlairats rules booklet PDF from embedded rules text (Catalan or English) and art under `2d_prints/graphics/`.
 
 ```bash
 python3 -m skyscrapers print_rules
 python3 -m skyscrapers print_rules --a4
+python3 -m skyscrapers print_rules --lang en
+python3 -m skyscrapers print_rules --lang en --a4
 python3 -m skyscrapers print_rules --output 2d_prints/rules/sample_instructions.pdf
 ```
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--output` | `2d_prints/rules/sample_instructions.pdf` (or `…_a4.pdf` with `--a4`) | Output path |
+| `--lang` | `ca` | `ca` or `en` |
+| `--output` | depends on `--lang` / `--a4` | See below |
 | `--a4` | off | Impose all 6 pages on one portrait A4 (9×9 cm tiles); backs = logo |
+
+Default output files:
+
+| | Catalan | English |
+| - | ------- | ------- |
+| Square pages | `sample_instructions.pdf` | `sample_instructions_en.pdf` |
+| A4 imposition | `sample_instructions_a4.pdf` | `sample_instructions_en_a4.pdf` |
 
 With `--a4`, print **duplex, flip on the long edge**, then cut six **9×9 cm** cards.
 
 ### 4.6 `print_boards`
 
-Builds a home-printable A4 PDF of Enlairats board cards (Modernista style): puzzle fronts plus mirrored solution backs for duplex printing. Only **4×4** boards are accepted.
+Builds a home-printable A4 PDF of Enlairats board cards (Modernista style): puzzle fronts plus mirrored solution backs for duplex printing. Only **4×4** boards are accepted. Level names on the cards follow `--lang`.
 
 ```bash
 python3 -m skyscrapers print_boards
+python3 -m skyscrapers print_boards --lang en
 python3 -m skyscrapers print_boards --input-dir ./sample_boards --output 2d_prints/boards/sample_boards.pdf
 python3 -m skyscrapers print_boards --board-size 6 --difficulty easy --difficulty "Mestre artesà"
 ```
@@ -172,16 +183,17 @@ python3 -m skyscrapers print_boards --board-size 6 --difficulty easy --difficult
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
 | `--input-dir` | `./sample_boards` | Board JSON folder |
-| `--output` | `./2d_prints/boards/sample_boards.pdf` | Output PDF |
+| `--output` | `sample_boards.pdf` or `sample_boards_en.pdf` | Under `2d_prints/boards/` |
 | `--board-size` | `6` | Outer square card side (**cm**) |
-| `--difficulty` | all | Filter (repeatable); English or Catalan labels |
+| `--difficulty` | all | Filter (repeatable); keys or CA/EN labels |
+| `--lang` | `ca` | `ca` or `en` (printed level names / “Solution”) |
 
-| JSON `difficulty` | Printed label |
-| ----------------- | ------------- |
-| `easy` | Aprenent |
-| `medium` | Oficial |
-| `hard` | Mestre artesà |
-| `expert` | Arquitecte |
+| JSON `difficulty` | Label (`--lang ca`) | Label (`--lang en`) |
+| ----------------- | ------------------- | ------------------- |
+| `easy` | Aprenent | Apprentice |
+| `medium` | Oficial | Journeyman |
+| `hard` | Mestre artesà | Master Craftsman |
+| `expert` | Arquitecte | Architect |
 
 ### 4.7 Board JSON
 

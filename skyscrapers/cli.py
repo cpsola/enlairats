@@ -137,8 +137,11 @@ def build_parser() -> argparse.ArgumentParser:
     pdf.add_argument(
         "--output",
         type=Path,
-        default=Path("2d_prints/boards/sample_boards.pdf"),
-        help="Output PDF path (default: 2d_prints/boards/sample_boards.pdf)",
+        default=None,
+        help=(
+            "Output PDF path (default: 2d_prints/boards/sample_boards.pdf, "
+            "or sample_boards_en.pdf with --lang en)"
+        ),
     )
     pdf.add_argument(
         "--board-size",
@@ -153,9 +156,16 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="LEVEL",
         help=(
             "Filter by difficulty (repeatable). "
-            "English: easy/medium/hard/expert or Catalan: "
-            "Aprenent/Oficial/Mestre artesà/Arquitecte"
+            "Keys: easy/medium/hard/expert; Catalan: "
+            "Aprenent/Oficial/Mestre artesà/Arquitecte; "
+            "English labels: Apprentice/Journeyman/Master Craftsman/Architect"
         ),
+    )
+    pdf.add_argument(
+        "--lang",
+        choices=("ca", "en"),
+        default="ca",
+        help="Language for printed level names (default: ca)",
     )
 
     rules = sub.add_parser(
@@ -167,8 +177,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help=(
-            "Output PDF path (default: 2d_prints/rules/sample_instructions.pdf, "
-            "or 2d_prints/rules/sample_instructions_a4.pdf with --a4)"
+            "Output PDF path (default depends on --lang / --a4: "
+            "sample_instructions.pdf, sample_instructions_a4.pdf, "
+            "sample_instructions_en.pdf, or sample_instructions_en_a4.pdf)"
         ),
     )
     rules.add_argument(
@@ -178,6 +189,12 @@ def build_parser() -> argparse.ArgumentParser:
             "Impose all 6 pages on one portrait A4 sheet (2×3 grid); "
             "backs show the game logo only — duplex print and cut"
         ),
+    )
+    rules.add_argument(
+        "--lang",
+        choices=("ca", "en"),
+        default="ca",
+        help="Rules booklet language (default: ca)",
     )
     return parser
 
@@ -330,12 +347,20 @@ def _cmd_rate(args: argparse.Namespace) -> int:
 def _cmd_print_boards(args: argparse.Namespace) -> int:
     from .boards_pdf import print_boards
 
+    output = args.output
+    if output is None:
+        name = (
+            "sample_boards_en.pdf" if args.lang == "en" else "sample_boards.pdf"
+        )
+        output = Path("2d_prints/boards") / name
+
     try:
         path, count, info = print_boards(
             args.input_dir,
-            args.output,
+            output,
             board_size_cm=args.board_size,
             difficulties=args.difficulty,
+            lang=args.lang,
         )
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -348,7 +373,7 @@ def _cmd_print_boards(args: argparse.Namespace) -> int:
     print(
         f"Wrote {count} board(s) → {path.resolve()}  "
         f"({info['pages']} page(s), {info['cols']}×{info['rows']} per page, "
-        f"A4 {orient}, card {info['board_size_cm']:g} cm)"
+        f"A4 {orient}, card {info['board_size_cm']:g} cm, lang={args.lang})"
     )
     return 0
 
@@ -358,9 +383,9 @@ def _cmd_print_rules(args: argparse.Namespace) -> int:
 
     try:
         if args.a4:
-            path = write_rules_a4_pdf(args.output)
+            path = write_rules_a4_pdf(args.output, lang=args.lang)
         else:
-            path = write_rules_pdf(args.output)
+            path = write_rules_pdf(args.output, lang=args.lang)
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -371,8 +396,12 @@ def _cmd_print_rules(args: argparse.Namespace) -> int:
     if args.a4:
         print(
             f"Wrote rules booklet → {path.resolve()}  "
-            "(A4 portrait 2×3 of 9×9 cm; front=rules, back=logo; duplex, flip long edge)"
+            "(A4 portrait 2×3 of 9×9 cm; front=rules, back=logo; "
+            f"duplex, flip long edge; lang={args.lang})"
         )
     else:
-        print(f"Wrote rules booklet → {path.resolve()}  (10×10 cm pages)")
+        print(
+            f"Wrote rules booklet → {path.resolve()}  "
+            f"(10×10 cm pages, lang={args.lang})"
+        )
     return 0

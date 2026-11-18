@@ -34,34 +34,52 @@ SAND = (0.769, 0.647, 0.455)  # #C4A574
 BURGUNDY = (0.451, 0.220, 0.239)  # #73383D
 INK_FAINT = (0.290, 0.200, 0.145, 0.12)
 
-DIFFICULTY_CA = {
-    "easy": "Aprenent",
-    "medium": "Oficial",
-    "hard": "Mestre artesà",
-    "expert": "Arquitecte",
+SUPPORTED_LANGS = ("ca", "en")
+
+DIFFICULTY_LABELS = {
+    "ca": {
+        "easy": "Aprenent",
+        "medium": "Oficial",
+        "hard": "Mestre artesà",
+        "expert": "Arquitecte",
+    },
+    "en": {
+        "easy": "Apprentice",
+        "medium": "Journeyman",
+        "hard": "Master Craftsman",
+        "expert": "Architect",
+    },
 }
 
-# Accent + petal colors per Catalan level (green / blue / yellow / red)
+# Catalan labels (kept for callers / filters that still expect DIFFICULTY_CA).
+DIFFICULTY_CA = DIFFICULTY_LABELS["ca"]
+
+BOARD_PDF_TEXT = {
+    "ca": {"solution": "Solució"},
+    "en": {"solution": "Solution"},
+}
+
+# Accent + petal colors per difficulty key (green / blue / yellow / red)
 LEVEL_STYLE = {
-    "Aprenent": {
+    "easy": {
         "petals": 4,
         "accent": (0.35, 0.52, 0.38),
         "petal": (0.52, 0.68, 0.48),
         "center": (0.88, 0.92, 0.82),
     },
-    "Oficial": {
+    "medium": {
         "petals": 5,
         "accent": (0.35, 0.48, 0.62),
         "petal": (0.48, 0.62, 0.78),
         "center": CREAM,
     },
-    "Mestre artesà": {
+    "hard": {
         "petals": 6,
         "accent": (0.72, 0.58, 0.18),
         "petal": (0.88, 0.74, 0.28),
         "center": (0.98, 0.94, 0.78),
     },
-    "Arquitecte": {
+    "expert": {
         "petals": 7,
         "accent": (0.62, 0.18, 0.22),
         "petal": (0.78, 0.32, 0.30),
@@ -99,39 +117,57 @@ def _norm_key(text: str) -> str:
     return " ".join(_strip_accents(text).casefold().split())
 
 
-def resolve_difficulty_label(board: dict[str, Any]) -> str:
-    """Return Catalan level name for a board JSON."""
+def normalize_lang(lang: str | None) -> str:
+    code = (lang or "ca").strip().casefold()
+    if code not in SUPPORTED_LANGS:
+        raise ValueError(
+            f"unsupported language {lang!r} (expected one of: {', '.join(SUPPORTED_LANGS)})"
+        )
+    return code
+
+
+def resolve_difficulty_key(board: dict[str, Any]) -> str:
+    """Return canonical difficulty key: easy / medium / hard / expert."""
     raw = board.get("difficulty")
     if isinstance(raw, str) and raw.strip():
         key = _norm_key(raw)
-        for eng, ca in DIFFICULTY_CA.items():
-            if key in {_norm_key(eng), _norm_key(ca)}:
-                return ca
-        # already Catalan with exact spelling
-        for ca in DIFFICULTY_CA.values():
-            if key == _norm_key(ca):
-                return ca
+        for eng in DIFFICULTY_CA:
+            aliases = {_norm_key(eng)}
+            for lang in SUPPORTED_LANGS:
+                aliases.add(_norm_key(DIFFICULTY_LABELS[lang][eng]))
+            if key in aliases:
+                return eng
     score = float(board["difficulty_score"])
-    return DIFFICULTY_CA[score_to_label(score)]
+    return score_to_label(score)
+
+
+def resolve_difficulty_label(board: dict[str, Any], lang: str = "ca") -> str:
+    """Return localized level name for a board JSON."""
+    lang = normalize_lang(lang)
+    return DIFFICULTY_LABELS[lang][resolve_difficulty_key(board)]
 
 
 def parse_difficulty_filter(values: Iterable[str] | None) -> set[str] | None:
     """
-    Parse CLI difficulty filters into a set of Catalan labels.
-    Accepts English tags and Catalan names. None → no filter.
+    Parse CLI difficulty filters into a set of canonical keys
+    (easy/medium/hard/expert). Accepts English tags and CA/EN display names.
+    None → no filter.
     """
     if not values:
         return None
     allowed: set[str] = set()
-    lookup = {}
-    for eng, ca in DIFFICULTY_CA.items():
-        lookup[_norm_key(eng)] = ca
-        lookup[_norm_key(ca)] = ca
+    lookup: dict[str, str] = {}
+    for eng in DIFFICULTY_CA:
+        lookup[_norm_key(eng)] = eng
+        for lang in SUPPORTED_LANGS:
+            lookup[_norm_key(DIFFICULTY_LABELS[lang][eng])] = eng
     for value in values:
         key = _norm_key(value)
         if key not in lookup:
             known = ", ".join(
-                list(DIFFICULTY_CA.keys()) + list(DIFFICULTY_CA.values())
+                list(DIFFICULTY_CA.keys())
+                + list(DIFFICULTY_LABELS["ca"].values())
+                + list(DIFFICULTY_LABELS["en"].values())
             )
             raise ValueError(f"unknown difficulty {value!r} (expected one of: {known})")
         allowed.add(lookup[key])
@@ -349,8 +385,7 @@ def _draw_card_shell(
     header_label: str,
 ) -> dict[str, float]:
     """Cream card, frame, flower header, and id row. Returns layout metrics."""
-    level = resolve_difficulty_label(board)
-    style = LEVEL_STYLE[level]
+    style = LEVEL_STYLE[resolve_difficulty_key(board)]
     layout = _compute_card_layout(board_size_cm)
     card_w = layout["card_w"]
     card_h = layout["card_h"]
@@ -500,6 +535,8 @@ def _draw_board_card(
     origin_y: float,
     board: dict[str, Any],
     board_size_cm: float,
+    *,
+    lang: str = "ca",
 ) -> None:
     """Draw one playable board card (front); origin is bottom-left of the card."""
     n = int(board["N"])
@@ -509,7 +546,7 @@ def _draw_board_card(
     c.saveState()
     try:
         _draw_board_card_contents(
-            c, origin_x, origin_y, board, board_size_cm
+            c, origin_x, origin_y, board, board_size_cm, lang=lang
         )
     finally:
         c.restoreState()
@@ -521,6 +558,8 @@ def _draw_solution_card(
     origin_y: float,
     board: dict[str, Any],
     board_size_cm: float,
+    *,
+    lang: str = "ca",
 ) -> None:
     """Draw the solution side (back) of a board card."""
     n = int(board["N"])
@@ -532,7 +571,7 @@ def _draw_solution_card(
     c.saveState()
     try:
         _draw_solution_card_contents(
-            c, origin_x, origin_y, board, board_size_cm
+            c, origin_x, origin_y, board, board_size_cm, lang=lang
         )
     finally:
         c.restoreState()
@@ -544,9 +583,11 @@ def _draw_board_card_contents(
     origin_y: float,
     board: dict[str, Any],
     board_size_cm: float,
+    *,
+    lang: str = "ca",
 ) -> None:
     n = int(board["N"])
-    level = resolve_difficulty_label(board)
+    level = resolve_difficulty_label(board, lang=lang)
     clues = board["clues"]
     layout = _draw_card_shell(
         c, origin_x, origin_y, board, board_size_cm, header_label=level
@@ -563,13 +604,21 @@ def _draw_solution_card_contents(
     origin_y: float,
     board: dict[str, Any],
     board_size_cm: float,
+    *,
+    lang: str = "ca",
 ) -> None:
     """Back of the card: same grid/clues as the front, filled with the solution."""
     n = int(board["N"])
     solution = board["solution"]
     clues = board["clues"]
+    lang = normalize_lang(lang)
     layout = _draw_card_shell(
-        c, origin_x, origin_y, board, board_size_cm, header_label="Solució"
+        c,
+        origin_x,
+        origin_y,
+        board,
+        board_size_cm,
+        header_label=BOARD_PDF_TEXT[lang]["solution"],
     )
     grid_left, grid_bottom, cell = _draw_puzzle_frame(
         c, origin_x, origin_y, layout, n
@@ -738,12 +787,12 @@ def load_boards_for_print(
             raise ValueError(f"{path.name}: missing clues")
         if "solution" not in board:
             raise ValueError(f"{path.name}: missing solution (needed for card backs)")
-        level = resolve_difficulty_label(board)
-        if difficulty_filter is not None and level not in difficulty_filter:
+        level_key = resolve_difficulty_key(board)
+        if difficulty_filter is not None and level_key not in difficulty_filter:
             continue
         board = dict(board)
         board["_path"] = str(path)
-        board["_level_ca"] = level
+        board["_level_key"] = level_key
         boards.append(board)
 
     if not boards:
@@ -756,9 +805,11 @@ def write_boards_pdf(
     output_path: Path,
     *,
     board_size_cm: float = 6.0,
+    lang: str = "ca",
 ) -> Path:
     if board_size_cm <= 0:
         raise ValueError("--board-size must be positive")
+    lang = normalize_lang(lang)
 
     missing_art = [p for p in BUILDING_FILES.values() if not p.is_file()]
     if missing_art:
@@ -793,7 +844,7 @@ def write_boards_pdf(
             x, y = _card_slot_xy(
                 slot, cols, rows, start_x, start_y, card_w, card_h, gap
             )
-            _draw_board_card(c, x, y, board, board_size_cm)
+            _draw_board_card(c, x, y, board, board_size_cm, lang=lang)
 
         c.showPage()
         for slot, board in enumerate(chunk):
@@ -808,7 +859,7 @@ def write_boards_pdf(
                 gap,
                 mirror=True,
             )
-            _draw_solution_card(c, x, y, board, board_size_cm)
+            _draw_solution_card(c, x, y, board, board_size_cm, lang=lang)
 
     c.save()
     return output_path
@@ -820,13 +871,17 @@ def print_boards(
     *,
     board_size_cm: float = 6.0,
     difficulties: Iterable[str] | None = None,
+    lang: str = "ca",
 ) -> tuple[Path, int, dict[str, Any]]:
     """
     Build the PDF. Returns (path, board_count, layout_info).
     """
+    lang = normalize_lang(lang)
     filt = parse_difficulty_filter(difficulties)
     boards = load_boards_for_print(input_dir, filt)
-    path = write_boards_pdf(boards, output_path, board_size_cm=board_size_cm)
+    path = write_boards_pdf(
+        boards, output_path, board_size_cm=board_size_cm, lang=lang
+    )
     card_w, card_h, _ = card_dimensions(board_size_cm)
     page_size, cols, rows, is_landscape = _best_page_layout(card_w, card_h)
     front_pages = math.ceil(len(boards) / (cols * rows))

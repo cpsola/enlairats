@@ -16,7 +16,9 @@ from .boards_pdf import (
     CHOCOLATE,
     SAGE,
     TERRACOTTA,
+    DIFFICULTY_LABELS,
     LEVEL_STYLE,
+    normalize_lang,
     _draw_flower,
     _draw_scalloped_frame,
     _register_fonts,
@@ -50,55 +52,261 @@ BUILDINGS = [
     {
         "key": "masia_freixa",
         "name": "Masia Freixa",
-        "height": "La més baixa",
+        "height": {
+            "ca": "La més baixa",
+            "en": "The shortest",
+        },
         "rank": 1,
         "file": _BUILDINGS / "masia_freixa.png",
     },
     {
         "key": "casa_amatller",
         "name": "Casa Amatller",
-        "height": "Mitjana-baixa",
+        "height": {
+            "ca": "Mitjana-baixa",
+            "en": "Low–medium",
+        },
         "rank": 2,
         "file": _BUILDINGS / "casa_amatller.png",
     },
     {
         "key": "torre_galatea",
         "name": "Torre Galatea",
-        "height": "Mitjana-alta",
+        "height": {
+            "ca": "Mitjana-alta",
+            "en": "Medium–high",
+        },
         "rank": 3,
         "file": _BUILDINGS / "torre_galatea.png",
     },
     {
         "key": "torre_sagrada_familia",
         "name": "Torre de la Sagrada Família",
-        "height": "La més alta",
+        "height": {
+            "ca": "La més alta",
+            "en": "The tallest",
+        },
         "rank": 4,
         "file": _BUILDINGS / "torre_sagrada_familia.png",
     },
 ]
 
-ALL_EXAMPLES: list[tuple[list[int], str, int]] = [
-    (
-        [1, 2, 3, 4],
-        "Es veuen tots quatre, cada un més alt que l’anterior.",
-        4,
-    ),
-    (
-        [4, 1, 2, 3],
-        "Només es veu la Torre de la Sagrada Família (4), que tapa la resta d'edificis.",
-        1,
-    ),
-    (
-        [2, 1, 4, 3],
-        "Es veuen la Casa Amatller (2) i la Torre de la Sagrada Família (4).",
-        2,
-    ),
-    (
-        [3, 1, 4, 2],
-        "Es veuen la Torre Galatea (3) i la Torre de la Sagrada Família (4).",
-        2,
-    ),
-]
+ALL_EXAMPLES: dict[str, list[tuple[list[int], str, int]]] = {
+    "ca": [
+        (
+            [1, 2, 3, 4],
+            "Es veuen tots quatre, cada un més alt que l’anterior.",
+            4,
+        ),
+        (
+            [4, 1, 2, 3],
+            "Només es veu la Torre de la Sagrada Família (4), que tapa la resta d'edificis.",
+            1,
+        ),
+        (
+            [2, 1, 4, 3],
+            "Es veuen la Casa Amatller (2) i la Torre de la Sagrada Família (4).",
+            2,
+        ),
+        (
+            [3, 1, 4, 2],
+            "Es veuen la Torre Galatea (3) i la Torre de la Sagrada Família (4).",
+            2,
+        ),
+    ],
+    "en": [
+        (
+            [1, 2, 3, 4],
+            "All four are visible, each taller than the one in front.",
+            4,
+        ),
+        (
+            [4, 1, 2, 3],
+            "Only Torre de la Sagrada Família (4) is visible; it hides the rest.",
+            1,
+        ),
+        (
+            [2, 1, 4, 3],
+            "Casa Amatller (2) and Torre de la Sagrada Família (4) are visible.",
+            2,
+        ),
+        (
+            [3, 1, 4, 2],
+            "Torre Galatea (3) and Torre de la Sagrada Família (4) are visible.",
+            2,
+        ),
+    ],
+}
+
+# Embedded copy for the booklet (proper names stay in Catalan/local form).
+RULES_COPY: dict[str, dict[str, object]] = {
+    "ca": {
+        "cover_label": "INSTRUCCIONS",
+        "title_what": "Què és Enlairats?",
+        "intro": (
+            "Enlairats és un joc de lògica ambientat en l’arquitectura modernista "
+            "catalana. Amb miniatures de quatre edificis construeixes un petit "
+            "barri sobre el tauler: has de decidir on va cadascun de manera que, "
+            "mirant des dels carrers del voltant, se’n vegin exactament els que "
+            "indiquen les pistes. Cada tauler té una sola solució."
+        ),
+        "section_contents": "Contingut",
+        "contents": (
+            "Taulers d’Enlairats (graella 4×4 amb pistes al contorn).",
+            "Miniatures dels quatre edificis (quatre peces de cada un).",
+            "Fitxes de pista (quatre peces amb cada número de 1 a 4).",
+        ),
+        "section_goal": "Objectiu",
+        "goal": (
+            "Omple totes les caselles de la graella 4×4 col·locant-hi les "
+            "miniatures, de manera que es compleixin totes les pistes del "
+            "contorn i la regla de barri."
+        ),
+        "section_setup": "Preparació",
+        "setup_steps": (
+            "Tria una carta de tauler (segons el nivell de dificultat).",
+            "Col·loca les fitxes de pistes (circulars de l’1 al 4) al contorn, "
+            "reproduïnt el que indica la carta.",
+            "Deixa a mà les miniatures dels quatre edificis.",
+        ),
+        "title_buildings": "Els quatre edificis",
+        "title_howto": "Com es juga",
+        "howto_intro": (
+            "Omple totes les caselles amb les miniatures respectant les pistes "
+            "del contorn i la regla de barri."
+        ),
+        "section_neighbourhood": "La regla del barri",
+        "neighbourhood_bullets": (
+            "A cada fila, els quatre edificis hi apareixen una sola vegada.",
+            "A cada columna, els quatre edificis hi apareixen una sola vegada.",
+        ),
+        "neighbourhood_note": (
+            "És a dir, no es pot repetir el mateix edifici a la mateixa fila ni columna."
+        ),
+        "section_clues": "Les pistes de contorn",
+        "clue_bullets": (
+            "Els números del contorn indiquen quants edificis es veuen mirant "
+            "aquell carrer en línia recta des d’aquell costat.",
+            "Posiciona’t al costat de la pista i mira cap a l’altre extrem. "
+            "Un edifici és visible només si és més alt que tots els que tens davant.",
+            "Els més baixos que queden darrere d’un de més alt queden amagats.",
+        ),
+        "section_important": "Important",
+        "important_bullets": (
+            "Si una posició del contorn no té número, no hi ha pista: no aporta informació.",
+            "La Masia Freixa no amaga res al darrere; la Torre de la Sagrada Família "
+            "amaga tot el que quedi darrere seu.",
+            "No cal endevinar: cada pas es pot deduir amb lògica.",
+        ),
+        "title_examples": "Exemples de visibilitat",
+        "examples_intro": "Mira d’esquerra a dreta. El cercle verd és la pista. ",
+        "title_finished": "Com saber si has acabat",
+        "finished_steps": (
+            "Totes les caselles tenen una miniatura.",
+            "Cap fila ni columna no repeteix el mateix edifici.",
+            "Mirant des de cada pista, es veuen exactament tants edificis "
+            "com indica el número.",
+            "Ara pots girar la carta de tauler i comprovar si la solució és correcta!",
+        ),
+        "title_levels": "Nivells de dificultat",
+        "level_blurbs": {
+            "easy": "Ideal per aprendre les regles i començar a jugar.",
+            "medium": "Diversió garantida quan ja coneixes el joc.",
+            "hard": "Raonaments més avançats; combina diverses pistes.",
+            "expert": "El repte més alt.",
+        },
+        "levels_note": "Cada tauler porta una flor i el nom del nivell.",
+        "closing": "Que gaudeixis construint.",
+    },
+    "en": {
+        "cover_label": "RULES",
+        "title_what": "What is Enlairats?",
+        "intro": (
+            "Enlairats is a logic game set in Catalan Modernista architecture. "
+            "With miniatures of four buildings you assemble a small neighbourhood "
+            "on the board: decide where each one goes so that, looking in from the "
+            "surrounding streets, you see exactly as many buildings as the clues "
+            "indicate. Every board has a single solution."
+        ),
+        "section_contents": "Contents",
+        "contents": (
+            "Enlairats boards (4×4 grid with clues around the border).",
+            "Miniatures of the four buildings (four pieces of each).",
+            "Clue tokens (four pieces for each number from 1 to 4).",
+        ),
+        "section_goal": "Goal",
+        "goal": (
+            "Fill every cell of the 4×4 grid with miniatures so that all border "
+            "clues and the neighbourhood rule are satisfied."
+        ),
+        "section_setup": "Setup",
+        "setup_steps": (
+            "Choose a board card (according to the difficulty level).",
+            "Place the clue tokens (circles numbered 1 to 4) around the border, "
+            "matching what the board card shows.",
+            "Keep the miniatures of the four buildings within reach.",
+        ),
+        "title_buildings": "The four buildings",
+        "title_howto": "How to play",
+        "howto_intro": (
+            "Fill every cell with miniatures while respecting the border clues "
+            "and the neighbourhood rule."
+        ),
+        "section_neighbourhood": "The neighbourhood rule",
+        "neighbourhood_bullets": (
+            "In every row, each of the four buildings appears exactly once.",
+            "In every column, each of the four buildings appears exactly once.",
+        ),
+        "neighbourhood_note": (
+            "In other words, the same building cannot be repeated in the same row or column."
+        ),
+        "section_clues": "Border clues",
+        "clue_bullets": (
+            "The numbers around the grid say how many buildings are visible looking "
+            "straight along that street from that side.",
+            "Stand by the clue and look toward the far end. A building is visible "
+            "only if it is taller than every building in front of it.",
+            "Shorter buildings behind a taller one are hidden.",
+        ),
+        "section_important": "Important",
+        "important_bullets": (
+            "If a border slot has no number, there is no clue there: it gives no information.",
+            "Masia Freixa never hides what stands behind it; Torre de la Sagrada Família "
+            "hides everything behind it from that viewpoint.",
+            "No guessing needed: every step can be deduced with logic.",
+        ),
+        "title_examples": "Visibility examples",
+        "examples_intro": "Look left to right. The green circle is the clue. ",
+        "title_finished": "How to know you are done",
+        "finished_steps": (
+            "Every cell has a miniature.",
+            "No row or column repeats the same building.",
+            "From each border clue, exactly as many buildings are visible as the number says.",
+            "You can now flip the board card and check whether the solution is correct!",
+        ),
+        "title_levels": "Difficulty levels",
+        "level_blurbs": {
+            "easy": "Ideal for learning the rules and starting to play.",
+            "medium": "Guaranteed fun once you know the game.",
+            "hard": "More advanced reasoning; combine several clues.",
+            "expert": "The highest challenge.",
+        },
+        "levels_note": "Each board carries a flower and the level name.",
+        "closing": "Enjoy building.",
+    },
+}
+
+_current_lang = "ca"
+
+
+def _set_lang(lang: str) -> str:
+    global _current_lang
+    _current_lang = normalize_lang(lang)
+    return _current_lang
+
+
+def _R() -> dict[str, object]:
+    return RULES_COPY[_current_lang]
 
 # Rank badge colors on the buildings page (green / blue / ochre / terracotta).
 RANK_BADGE = {
@@ -324,6 +532,7 @@ def _fit_image(
 # ---------------------------------------------------------------------------
 
 def _page_cover(c: canvas.Canvas) -> None:
+    t = _R()
     _set_fill(c, CREAM)
     c.rect(0, 0, PAGE, PAGE, fill=1, stroke=0)
     pad = MARGIN * 0.55
@@ -332,71 +541,45 @@ def _page_cover(c: canvas.Canvas) -> None:
     )
     c.setFont("EnlairatsDisplay-Bold", 8)
     c.setFillColorRGB(*CHOCOLATE)
-    c.drawCentredString(PAGE / 2, 0.62 * CM, "INSTRUCCIONS")
+    c.drawCentredString(PAGE / 2, 0.62 * CM, str(t["cover_label"]))
     _draw_page_frame(c)
 
 
 def _page_intro(c: canvas.Canvas) -> None:
+    t = _R()
     _new_page(c)
     y = _content_top()
-    y = _title(c, "Què és Enlairats?", y)
-    y = _body(
-        c,
-        "Enlairats és un joc de lògica ambientat en l’arquitectura modernista "
-        "catalana. Amb miniatures de quatre edificis construeixes un petit "
-        "barri sobre el tauler: has de decidir on va cadascun de manera que, "
-        "mirant des dels carrers del voltant, se’n vegin exactament els que "
-        "indiquen les pistes. Cada tauler té una sola solució.",
-        MARGIN,
-        y,
-        PAGE - 2 * MARGIN,
-    )
+    y = _title(c, str(t["title_what"]), y)
+    y = _body(c, str(t["intro"]), MARGIN, y, PAGE - 2 * MARGIN)
     y -= 0.14 * CM
     y -= 0.2 * CM
 
-    y = _section(c, "Contingut", y)
-    for item in (
-        "Taulers d’Enlairats (graella 4×4 amb pistes al contorn).",
-        "Miniatures dels quatre edificis (quatre peces de cada un).",
-        "Fitxes de pista (quatre peces amb cada número de 1 a 4).",
-    ):
-        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
+    y = _section(c, str(t["section_contents"]), y)
+    for item in t["contents"]:  # type: ignore[union-attr]
+        y = _bullet(c, str(item), MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.12 * CM
 
     y -= 0.2 * CM
-    y = _section(c, "Objectiu", y)
-    y = _body(
-        c,
-        "Omple totes les caselles de la graella 4×4 col·locant-hi les "
-        "miniatures, de manera que es compleixin totes les pistes del "
-        "contorn i la regla de barri.",
-        MARGIN,
-        y,
-        PAGE - 2 * MARGIN,
-    )
+    y = _section(c, str(t["section_goal"]), y)
+    y = _body(c, str(t["goal"]), MARGIN, y, PAGE - 2 * MARGIN)
     y -= 0.22 * CM
 
-    y = _section(c, "Preparació", y)
-    steps = [
-        "Tria una carta de tauler (segons el nivell de dificultat).",
-        "Col·loca les fitxes de pistes (circulars de l’1 al 4) al contorn, "
-        "reproduïnt el que indica la carta.",
-        "Deixa a mà les miniatures dels quatre edificis.",
-    ]
-    for i, step in enumerate(steps, start=1):
+    y = _section(c, str(t["section_setup"]), y)
+    for i, step in enumerate(t["setup_steps"], start=1):  # type: ignore[arg-type]
         c.setFillColorRGB(*SAGE)
         c.setFont("EnlairatsDisplay-Bold", 8.5)
         c.drawString(MARGIN, y, f"{i}.")
         y = _body(
-            c, step, MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM
+            c, str(step), MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM
         )
         y -= 0.12 * CM
 
 
 def _page_buildings(c: canvas.Canvas) -> None:
+    t = _R()
     _new_page(c)
     y = _content_top()
-    y = _title(c, "Els quatre edificis", y)
+    y = _title(c, str(t["title_buildings"]), y)
 
     gap = 0.16 * CM
     usable_w = PAGE - 2 * MARGIN
@@ -439,70 +622,48 @@ def _page_buildings(c: canvas.Canvas) -> None:
         c.drawCentredString(x0 + cell_w / 2, y0 + 0.30 * CM, name)
         c.setFont("EnlairatsSerif", 5.6)
         c.setFillColorRGB(CHOCOLATE[0], CHOCOLATE[1], CHOCOLATE[2], alpha=0.8)
-        c.drawCentredString(x0 + cell_w / 2, y0 + 0.10 * CM, b["height"])
+        height = b["height"][_current_lang]
+        c.drawCentredString(x0 + cell_w / 2, y0 + 0.10 * CM, height)
         c.setFillColorRGB(*CHOCOLATE)
 
 
 def _page_howto(c: canvas.Canvas) -> None:
+    t = _R()
     _new_page(c)
     y = _content_top()
-    y = _title(c, "Com es juga", y)
-    y = _body(
-        c,
-        "Omple totes les caselles amb les miniatures respectant les pistes "
-        "del contorn i la regla de barri.",
-        MARGIN,
-        y,
-        PAGE - 2 * MARGIN,
-    )
+    y = _title(c, str(t["title_howto"]), y)
+    y = _body(c, str(t["howto_intro"]), MARGIN, y, PAGE - 2 * MARGIN)
     y -= 0.2 * CM
 
-    y = _section(c, "La regla del barri", y)
-    for item in (
-        "A cada fila, els quatre edificis hi apareixen una sola vegada.",
-        "A cada columna, els quatre edificis hi apareixen una sola vegada.",
-    ):
-        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
+    y = _section(c, str(t["section_neighbourhood"]), y)
+    for item in t["neighbourhood_bullets"]:  # type: ignore[union-attr]
+        y = _bullet(c, str(item), MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.08 * CM
     y -= 0.06 * CM
-    y = _body(
-        c,
-        "És a dir, no es pot repetir el mateix edifici a la mateixa fila ni columna.",
-        MARGIN,
-        y,
-        PAGE - 2 * MARGIN,
-    )
+    y = _body(c, str(t["neighbourhood_note"]), MARGIN, y, PAGE - 2 * MARGIN)
 
     y -= 0.2 * CM
-    y = _section(c, "Les pistes de contorn", y)
-    for item in (
-        "Els números del contorn indiquen quants edificis es veuen mirant "
-        "aquell carrer en línia recta des d’aquell costat.",
-        "Posiciona’t al costat de la pista i mira cap a l’altre extrem. Un edifici és visible només si és més alt que tots els que tens davant.",
-        "Els més baixos que queden darrere d’un de més alt queden amagats.",
-    ):
-        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
+    y = _section(c, str(t["section_clues"]), y)
+    for item in t["clue_bullets"]:  # type: ignore[union-attr]
+        y = _bullet(c, str(item), MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.06 * CM
 
     y -= 0.2 * CM
-    y = _section(c, "Important", y)
-    for item in (
-        "Si una posició del contorn no té número, no hi ha pista: no aporta informació.",
-        "La Masia Freixa no amaga res al darrere; la Torre de la Sagrada Família "
-        "amaga tot el que quedi darrere seu.",
-        "No cal endevinar: cada pas es pot deduir amb lògica.",
-    ):
-        y = _bullet(c, item, MARGIN, y, PAGE - 2 * MARGIN)
+    y = _section(c, str(t["section_important"]), y)
+    for item in t["important_bullets"]:  # type: ignore[union-attr]
+        y = _bullet(c, str(item), MARGIN, y, PAGE - 2 * MARGIN)
         y -= 0.06 * CM
 
 
 def _page_examples(c: canvas.Canvas) -> None:
+    t = _R()
+    examples = ALL_EXAMPLES[_current_lang]
     _new_page(c)
     y = _content_top()
-    y = _title(c, "Exemples de visibilitat", y)
+    y = _title(c, str(t["title_examples"]), y)
     y = _body(
         c,
-        "Mira d’esquerra a dreta. El cercle verd és la pista. ",
+        str(t["examples_intro"]),
         MARGIN,
         y,
         PAGE - 2 * MARGIN,
@@ -512,12 +673,12 @@ def _page_examples(c: canvas.Canvas) -> None:
 
     bottom = _content_bottom()
     available = y - bottom
-    n = len(ALL_EXAMPLES)
+    n = len(examples)
     example_gap = 0.38 * CM
     slot_h = (available - (n - 1) * example_gap) / n
     icon_h = min(0.82 * CM, slot_h * 0.44)
 
-    for i, (ranks, caption, clue) in enumerate(ALL_EXAMPLES):
+    for i, (ranks, caption, clue) in enumerate(examples):
         slot_top = y - i * (slot_h + example_gap)
         _set_fill(c, SAGE)
         badge_x = MARGIN + 0.26 * CM
@@ -562,35 +723,27 @@ def _page_examples(c: canvas.Canvas) -> None:
 
 
 def _page_end(c: canvas.Canvas) -> None:
+    t = _R()
     _new_page(c)
     y = _content_top()
-    y = _title(c, "Com saber si has acabat", y)
-    steps = [
-        "Totes les caselles tenen una miniatura.",
-        "Cap fila ni columna no repeteix el mateix edifici.",
-        "Mirant des de cada pista, es veuen exactament tants edificis "
-        "com indica el número.",
-        "Ara pots girar la carta de tauler i comprovar si la solució és correcta!",
-    ]
-    for i, step in enumerate(steps, start=1):
+    y = _title(c, str(t["title_finished"]), y)
+    for i, step in enumerate(t["finished_steps"], start=1):  # type: ignore[arg-type]
         c.setFillColorRGB(*SAGE)
         c.setFont("EnlairatsDisplay-Bold", 8.5)
         c.drawString(MARGIN, y, f"{i}.")
         y = _body(
-            c, step, MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM
+            c, str(step), MARGIN + 0.4 * CM, y, PAGE - 2 * MARGIN - 0.4 * CM
         )
         y -= 0.06 * CM
 
     y -= 0.18 * CM
-    y = _title(c, "Nivells de dificultat", y)
-    levels = [
-        ("Aprenent", "Ideal per aprendre les regles i començar a jugar."),
-        ("Oficial", "Diversió garantida quan ja coneixes el joc."),
-        ("Mestre artesà", "Raonaments més avançats; combina diverses pistes."),
-        ("Arquitecte", "El repte més alt."),
-    ]
-    for name, desc in levels:
-        style = LEVEL_STYLE[name]
+    y = _title(c, str(t["title_levels"]), y)
+    blurbs = t["level_blurbs"]  # type: ignore[assignment]
+    assert isinstance(blurbs, dict)
+    for key in ("easy", "medium", "hard", "expert"):
+        name = DIFFICULTY_LABELS[_current_lang][key]
+        desc = str(blurbs[key])
+        style = LEVEL_STYLE[key]
         _draw_flower(
             c,
             MARGIN + 0.26 * CM,
@@ -617,7 +770,7 @@ def _page_end(c: canvas.Canvas) -> None:
     y -= 0.06 * CM
     y = _body(
         c,
-        "Cada tauler porta una flor i el nom del nivell.",
+        str(t["levels_note"]),
         MARGIN,
         y,
         PAGE - 2 * MARGIN,
@@ -628,7 +781,7 @@ def _page_end(c: canvas.Canvas) -> None:
     # Keep a clear gap under the blurb; sit above the page-number band.
     closing_y = min(y - 0.55 * CM, 1.05 * CM)
     closing_y = max(closing_y, 0.88 * CM)
-    c.drawCentredString(PAGE / 2, closing_y, "Que gaudeixis construint.")
+    c.drawCentredString(PAGE / 2, closing_y, str(t["closing"]))
 
 
 def _rules_page_fns() -> list:
@@ -668,10 +821,20 @@ def _register_rules_page_forms(c: canvas.Canvas) -> list[str]:
     return names
 
 
-def write_rules_pdf(output_path: Path | None = None) -> Path:
+def _default_rules_output(lang: str, *, a4: bool) -> Path:
+    rules_dir = _PACKAGE_ROOT / "2d_prints" / "rules"
+    if lang == "en":
+        name = "sample_instructions_en_a4.pdf" if a4 else "sample_instructions_en.pdf"
+    else:
+        name = "sample_instructions_a4.pdf" if a4 else "sample_instructions.pdf"
+    return rules_dir / name
+
+
+def write_rules_pdf(output_path: Path | None = None, *, lang: str = "ca") -> Path:
     """Build the 10×10 cm rules booklet (one square page per sheet)."""
+    lang = _set_lang(lang)
     if output_path is None:
-        output_path = _PACKAGE_ROOT / "2d_prints" / "rules" / "sample_instructions.pdf"
+        output_path = _default_rules_output(lang, a4=False)
     output_path = Path(output_path)
 
     _ensure_rules_assets()
@@ -699,7 +862,7 @@ def _page_logo_back(c: canvas.Canvas) -> None:
     )
 
 
-def write_rules_a4_pdf(output_path: Path | None = None) -> Path:
+def write_rules_a4_pdf(output_path: Path | None = None, *, lang: str = "ca") -> Path:
     """
     Impose all six rules pages on one portrait A4 sheet (duplex).
 
@@ -708,8 +871,9 @@ def write_rules_a4_pdf(output_path: Path | None = None) -> Path:
     column-mirrored for long-edge duplex flip so each cut card has
     rules on the front and an upright logo on the back.
     """
+    lang = _set_lang(lang)
     if output_path is None:
-        output_path = _PACKAGE_ROOT / "2d_prints" / "rules" / "sample_instructions_a4.pdf"
+        output_path = _default_rules_output(lang, a4=True)
     output_path = Path(output_path)
 
     _ensure_rules_assets()
