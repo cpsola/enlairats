@@ -70,8 +70,8 @@ LEVEL_STYLE = {
 }
 
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent
-_FONTS_DIR = _PACKAGE_ROOT / "paper_prints" / "graphics" / "fonts"
-_BUILDINGS_DIR = _PACKAGE_ROOT / "paper_prints" / "graphics" / "buildings"
+_FONTS_DIR = _PACKAGE_ROOT / "2d_prints" / "graphics" / "fonts"
+_BUILDINGS_DIR = _PACKAGE_ROOT / "2d_prints" / "graphics" / "buildings"
 _FONTS_REGISTERED = False
 
 # Rank badge colors (green / blue / ochre / terracotta) — shared with rules booklet.
@@ -153,7 +153,7 @@ def _register_fonts() -> None:
         path = _FONTS_DIR / filename
         if not path.is_file():
             raise FileNotFoundError(
-                f"missing font {path}; expected bundled fonts under paper_prints/graphics/fonts/"
+                f"missing font {path}; expected bundled fonts under 2d_prints/graphics/fonts/"
             )
         pdfmetrics.registerFont(TTFont(name, str(path)))
     _FONTS_REGISTERED = True

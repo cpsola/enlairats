@@ -137,8 +137,8 @@ def build_parser() -> argparse.ArgumentParser:
     pdf.add_argument(
         "--output",
         type=Path,
-        default=Path("paper_prints/boards/sample_boards.pdf"),
-        help="Output PDF path (default: paper_prints/boards/sample_boards.pdf)",
+        default=Path("2d_prints/boards/sample_boards.pdf"),
+        help="Output PDF path (default: 2d_prints/boards/sample_boards.pdf)",
     )
     pdf.add_argument(
         "--board-size",
@@ -167,8 +167,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help=(
-            "Output PDF path (default: paper_prints/rules/sample_instructions.pdf, "
-            "or paper_prints/rules/sample_instructions_a4.pdf with --a4)"
+            "Output PDF path (default: 2d_prints/rules/sample_instructions.pdf, "
+            "or 2d_prints/rules/sample_instructions_a4.pdf with --a4)"
         ),
     )
     rules.add_argument(

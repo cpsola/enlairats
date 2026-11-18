@@ -1,6 +1,6 @@
 # Enlairats
 
-<img src="paper_prints/graphics/cover_v2.png" alt="Enlairats cover" width="420">
+<img src="2d_prints/graphics/cover_v2.png" alt="Enlairats cover" width="420">
 
 **Enlairats** is a Catalan Modernista edition of the classic **Skyscrapers** (also known as Towers) logic puzzle: fill a grid with building heights so every border clue is satisfied.
 
@@ -27,11 +27,11 @@ Enlairats is an original presentation built on the well-known genre of Skyscrape
 enlairats/
 ├── skyscrapers/          # Python package: generate, play, rate, print PDFs
 ├── sample_boards/        # Sample 4×4 puzzles (JSON)
-├── paper_prints/
+├── 2d_prints/
 │   ├── graphics/         # Cover art, building art, OFL fonts
 │   ├── rules/            # Catalan rules source + sample PDFs
 │   └── boards/           # Sample printable board PDF
-├── 3d_prints/            # 3D STLs, photos, print guide (STLs coming soon)
+├── 3d_prints/            # 3D STLs, photos, print guide
 ├── scripts/              # Helpers (e.g. trim boards per difficulty)
 ├── LICENSE               # CC BY-NC 4.0
 └── NOTICE                # Third-party font notices (OFL)
@@ -49,7 +49,7 @@ The **goal** is to fill an `N×N` grid with building heights so that every clue 
 
 There is exactly one correct solution for each generated puzzle.
 
-Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to its game [rulebook](`paper_prints/rules/sample_instructions.pdf).
+Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to its game [rulebook](`2d_prints/rules/sample_instructions.pdf).
 
 ---
 
@@ -57,7 +57,7 @@ Enlairats brings this abstract puzzle to life: instead of entering numbers in a 
 
 ### 3.1 2D prints (aka paper / cardboard)
 
-The [rulebook](`paper_prints/rules/sample_instructions_a4.pdf`) and [sample puzzle boards](`paper_prints/boards/sample_boards.pdf`) ready to print can be found in the  [paper_prints](`paper_prints`) folder.
+The [rulebook](`2d_prints/rules/sample_instructions_a4.pdf`) and [sample puzzle boards](`2d_prints/boards/sample_boards.pdf`) ready to print can be found in the  [2d_prints](`2d_prints`) folder.
 
 You can also use the accompanying Python code to generate new puzzle boards and regenerate the rulebook (see [Section 4](#4-software-cli)). The scripts allow you to customize the board size and other settings.
 
@@ -65,7 +65,7 @@ You can also use the accompanying Python code to generate new puzzle boards and 
 
 ### 3.2 3D prints
 
-STL files for buildings, board, clue tokens, and box will live under `3d_prints/stl/`. See [`3d_prints/README.md`](3d_prints/README.md) (guide scaffolded; files pending).
+STL files for buildings, board, clue tokens, and box are under `3d_prints/stl/`. See [`3d_prints/README.md`](3d_prints/README.md) for the full-game print table, settings, and box remix attribution.
 
 ---
 
@@ -81,7 +81,7 @@ The subsections below cover setup and each command.
 
 ### 4.1 Setup
 
-**Requirements:** Python 3.10+, NumPy, ReportLab (for PDF commands), Tkinter (for `play`). Fonts are bundled under `paper_prints/graphics/fonts/`.
+**Requirements:** Python 3.10+, NumPy, ReportLab (for PDF commands), Tkinter (for `play`). Fonts are bundled under `2d_prints/graphics/fonts/`.
 
 ```bash
 python3 -m venv .venv
@@ -105,7 +105,7 @@ python3 -m skyscrapers print_rules --a4
 python3 -m skyscrapers print_boards
 ```
 
-Defaults write JSON to `./sample_boards` and PDFs under `./paper_prints/`.
+Defaults write JSON to `./sample_boards` and PDFs under `./2d_prints/`.
 
 ### 4.3 `generate`
 
@@ -144,17 +144,17 @@ python3 -m skyscrapers rate sample_boards/<id>.json
 
 ### 4.5 `print_rules`
 
-Builds the printable Enlairats rules booklet PDF from the Catalan rules text and art under `paper_prints/graphics/`.
+Builds the printable Enlairats rules booklet PDF from the Catalan rules text and art under `2d_prints/graphics/`.
 
 ```bash
 python3 -m skyscrapers print_rules
 python3 -m skyscrapers print_rules --a4
-python3 -m skyscrapers print_rules --output paper_prints/rules/sample_instructions.pdf
+python3 -m skyscrapers print_rules --output 2d_prints/rules/sample_instructions.pdf
 ```
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--output` | `paper_prints/rules/sample_instructions.pdf` (or `…_a4.pdf` with `--a4`) | Output path |
+| `--output` | `2d_prints/rules/sample_instructions.pdf` (or `…_a4.pdf` with `--a4`) | Output path |
 | `--a4` | off | Impose all 6 pages on one portrait A4 (9×9 cm tiles); backs = logo |
 
 With `--a4`, print **duplex, flip on the long edge**, then cut six **9×9 cm** cards.
@@ -165,14 +165,14 @@ Builds a home-printable A4 PDF of Enlairats board cards (Modernista style): puzz
 
 ```bash
 python3 -m skyscrapers print_boards
-python3 -m skyscrapers print_boards --input-dir ./sample_boards --output paper_prints/boards/sample_boards.pdf
+python3 -m skyscrapers print_boards --input-dir ./sample_boards --output 2d_prints/boards/sample_boards.pdf
 python3 -m skyscrapers print_boards --board-size 6 --difficulty easy --difficulty "Mestre artesà"
 ```
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
 | `--input-dir` | `./sample_boards` | Board JSON folder |
-| `--output` | `./paper_prints/boards/sample_boards.pdf` | Output PDF |
+| `--output` | `./2d_prints/boards/sample_boards.pdf` | Output PDF |
 | `--board-size` | `6` | Outer square card side (**cm**) |
 | `--difficulty` | all | Filter (repeatable); English or Catalan labels |
 
@@ -307,7 +307,7 @@ Coordinates in the `rate` trace are `(row, col)` with `(0,0)` at the top-left.
 ## 6. License and attribution
 
 - **Project** (code, art, rules, sample boards, PDFs, STLs, photos): [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — see [`LICENSE`](LICENSE).
-- **Fonts** (Cormorant Garamond, Cinzel): SIL Open Font License 1.1 — see [`NOTICE`](NOTICE) and `paper_prints/graphics/fonts/`.
+- **Fonts** (Cormorant Garamond, Cinzel): SIL Open Font License 1.1 — see [`NOTICE`](NOTICE) and `2d_prints/graphics/fonts/`.
 
 The 3D designs (board, buildings, clue tokens, and related STLs) are by [cpsola](https://github.com/cpsola). The box is remixed from ... The 2D art, rules materials, and software were created by [cpsola](https://github.com/cpsola) with Cursor as AI coding assistant.
 
