@@ -49,7 +49,7 @@ The **goal** is to fill an `N×N` grid with building heights so that every clue 
 
 There is exactly one correct solution for each generated puzzle.
 
-Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to its game [rulebook](`2d_prints/rules/sample_instructions.pdf).
+Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to its game [rulebook](2d_prints/rules/sample_instructions.pdf).
 
 ---
 
@@ -57,7 +57,7 @@ Enlairats brings this abstract puzzle to life: instead of entering numbers in a 
 
 ### 3.1 2D prints (aka paper / cardboard)
 
-The [rulebook](`2d_prints/rules/sample_instructions_a4.pdf`) and [sample puzzle boards](`2d_prints/boards/sample_boards.pdf`) ready to print can be found in the  [2d_prints](`2d_prints`) folder.
+The [rulebook](2d_prints/rules/sample_instructions_a4.pdf) and [sample puzzle boards](2d_prints/boards/sample_boards.pdf) ready to print can be found in the [2d_prints](2d_prints/) folder.
 
 You can also use the accompanying Python code to generate new puzzle boards and regenerate the rulebook (see [Section 4](#4-software-cli)). The scripts allow you to customize the board size and other settings.
 
@@ -309,6 +309,6 @@ Coordinates in the `rate` trace are `(row, col)` with `(0,0)` at the top-left.
 - **Project** (code, art, rules, sample boards, PDFs, STLs, photos): [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — see [`LICENSE`](LICENSE).
 - **Fonts** (Cormorant Garamond, Cinzel): SIL Open Font License 1.1 — see [`NOTICE`](NOTICE) and `2d_prints/graphics/fonts/`.
 
-The 3D designs (board, buildings, clue tokens, and related STLs) are by [cpsola](https://github.com/cpsola). The box is remixed from ... The 2D art, rules materials, and software were created by [cpsola](https://github.com/cpsola) with Cursor as AI coding assistant.
+The 3D designs (board, buildings, clue tokens, and related STLs) are by [cpsola](https://github.com/cpsola). The box is remixed from [Magnetic Box (Parametric)](https://www.printables.com/model/643648-magnetic-box-parametric) (CC BY 4.0). The 2D art, rules materials, and software were created by [cpsola](https://github.com/cpsola) with Cursor as AI coding assistant.
 
 Please credit **Enlairats** and link back to this repository when you share non-commercial derivatives.
