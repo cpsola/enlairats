@@ -10,6 +10,11 @@ This repository contains everything needed to create a complete, printable versi
 
 Enlairats is an original presentation built on the well-known genre of Skyscrapers/Towers mechanic.
 
+<p align="center">
+  <img src="3d_prints/photos/enlairats_all.jpg" alt="Enlairats full set: box, board, cards, and rules" width="480">
+</p>
+
+
 **License:** [CC BY-NC 4.0](LICENSE) (non-commercial). Bundled fonts are under the SIL OFL — see [NOTICE](NOTICE).
 
 ## Contents
@@ -42,6 +47,8 @@ enlairats/
 
 ## 2. How to play Skyscrapers/Enlairats
 
+For instructions on how to play Enlairats, refer to the [rulebook (Catalan)](2d_prints/rules/sample_instructions.pdf) or the [rulebook (English)](2d_prints/rules/sample_instructions_en.pdf).
+
 The classical (abstract) Skyscrapers game works as follows.
 
 The **goal** is to fill an `N×N` grid with building heights so that every clue around the border is satisfied.
@@ -51,7 +58,7 @@ The **goal** is to fill an `N×N` grid with building heights so that every clue 
 
 There is exactly one correct solution for each generated puzzle.
 
-Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. For instructions on how to play Enlairats, refer to the [rulebook (Catalan)](2d_prints/rules/sample_instructions.pdf) or the [rulebook (English)](2d_prints/rules/sample_instructions_en.pdf).
+Enlairats brings this abstract puzzle to life: instead of entering numbers in a grid, players place Modernista building miniatures on a physical game board. 
 
 ---
 
@@ -71,11 +78,9 @@ You can also use the accompanying Python code to generate new puzzle boards and 
 
 ### 3.2 3D prints
 
-STL files for buildings, board, clue tokens, and box are under [`3d_prints/stl/`](3d_prints/stl/). See [`3d_prints/README.md`](3d_prints/README.md) for the full-game print table, settings, and box remix attribution.
+See [`3d_prints/README.md`](3d_prints/README.md) for the full-game print table, settings, and box remix attribution.
 
-<p align="center">
-  <img src="3d_prints/photos/enlairats_all.jpg" alt="Enlairats full set: box, board, cards, and rules" width="480">
-</p>
+STL files for buildings, board, clue tokens, and box are under [`3d_prints/stl/`](3d_prints/stl/). 
 
 <p align="center">
   <img src="3d_prints/photos/enlairats_box.jpg" alt="Enlairats box packed with board, buildings, and clue tokens" width="480">
