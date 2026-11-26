@@ -65,9 +65,25 @@ You can also use the accompanying Python code to generate new puzzle boards and 
 
 **Recommended print settings:** 100% scale, colour, cardstock 250–300 g/m², duplex, flip on the **long edge**, bind with a Chicago screw or ring (rulebook).
 
+<p align="center">
+  <img src="3d_prints/photos/enlairats_rules_and_boards.jpg" alt="Enlairats printed rules booklet and puzzle board cards" width="480">
+</p>
+
 ### 3.2 3D prints
 
 STL files for buildings, board, clue tokens, and box are under [`3d_prints/stl/`](3d_prints/stl/). See [`3d_prints/README.md`](3d_prints/README.md) for the full-game print table, settings, and box remix attribution.
+
+<p align="center">
+  <img src="3d_prints/photos/enlairats_all.jpg" alt="Enlairats full set: box, board, cards, and rules" width="480">
+</p>
+
+<p align="center">
+  <img src="3d_prints/photos/enlairats_box.jpg" alt="Enlairats box packed with board, buildings, and clue tokens" width="480">
+</p>
+
+<p align="center">
+  <img src="3d_prints/photos/enlairats_game.jpg" alt="Enlairats board in play with buildings and clue tokens" width="480">
+</p>
 
 ---
 
